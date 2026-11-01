@@ -1,0 +1,153 @@
+/* 动效层。所有隐藏态都挂在 html.motion 下：无 JS 或减少动态效果时内容照常显示。
+   只动 transform / opacity / clip-path，避免触发重排。 */
+
+:root { --ease: cubic-bezier(.16, 1, .3, 1); }
+
+html.lenis, html.lenis body { height: auto; }
+.lenis.lenis-smooth { scroll-behavior: auto !important; }
+.lenis.lenis-stopped { overflow: clip; }
+
+html.motion body { overflow-x: clip; }
+
+/* 顶部进度条 */
+.progress {
+  position: fixed; inset: 0 0 auto 0; z-index: 60; height: 2px;
+  background: var(--accent); transform: scaleX(0); transform-origin: 0 50%; pointer-events: none;
+}
+html:not(.motion) .progress { display: none; }
+
+/* 顶栏随滚动方向隐藏 */
+html.motion .top { transition: background .3s, border-color .3s, transform .55s var(--ease); }
+html.motion .top.is-hidden { transform: translate3d(0, -100%, 0); }
+
+/* 导航滑动指示条 */
+.nav { position: relative; }
+.nav__ind {
+  position: absolute; left: 0; bottom: -2px; height: 1px; width: var(--w, 0); background: var(--accent);
+  opacity: var(--o, 0); transform: translate3d(var(--x, 0), 0, 0); pointer-events: none;
+  transition: transform .6s var(--ease), width .6s var(--ease), opacity .3s;
+}
+
+/* 首屏：固定在原地，后面的章节像幕布一样盖上来 */
+html.motion .hero { position: sticky; top: 0; z-index: 0; }
+html.motion .sec, html.motion .contact, html.motion .foot { position: relative; z-index: 1; }
+html.motion .hero__in, html.motion .hero__canvas { will-change: transform, opacity; }
+
+html.motion h1 { visibility: hidden; }
+html.motion.ready h1 { visibility: visible; }
+html.motion .hero__eyebrow, html.motion .hero__foot, html.motion .hero__note {
+  opacity: 0; transform: translate3d(0, 14px, 0);
+  transition: opacity .9s ease, transform 1.1s var(--ease);
+}
+html.motion.ready .hero__eyebrow { opacity: 1; transform: none; transition-delay: .1s; }
+html.motion.ready .hero__foot { opacity: 1; transform: none; transition-delay: .85s; }
+html.motion.ready .hero__note { opacity: 1; transform: none; transition-delay: 1.2s; }
+
+/* 逐字进场 */
+html.js .reveal.split { opacity: 1; transform: none; transition: none; }
+html.motion .ch {
+  display: inline-block; opacity: 0; transform: translate3d(0, .6em, 0);
+  transition: opacity .7s ease, transform 1.05s var(--ease);
+  transition-delay: calc(var(--i) * 17ms);
+}
+html.motion .is-in .ch { opacity: 1; transform: none; }
+html.motion h1 .ch { transition-delay: calc(var(--i) * 30ms + 160ms); }
+html.motion.ready h1 .ch { opacity: 1; transform: none; }
+
+/* 成组依次进场 */
+html.js .reveal.group { opacity: 1; transform: none; transition: none; }
+html.motion .rise {
+  opacity: 0; transform: translate3d(0, 28px, 0);
+  transition: opacity .8s ease, transform 1.05s var(--ease);
+  transition-delay: calc(var(--d) * 75ms);
+}
+html.motion .is-in > .rise { opacity: 1; transform: none; }
+
+/* 想 做 验 改：随滚动依次点亮 */
+.loop4 { position: relative; }
+html.motion .loop4::before {
+  content: ""; position: absolute; left: 0; right: 0; top: -1px; height: 1px; background: var(--accent);
+  transform: scaleX(var(--lp, 0)); transform-origin: 0 50%;
+}
+html.motion .loop4 li { opacity: calc(.24 + .76 * var(--a, 0)); }
+html.motion .loop4 li.reveal, html.motion .loop4 li.reveal.is-in { transform: none; transition: none; }
+html.motion .loop4 li:nth-child(3) b { color: inherit; }
+html.motion .loop4 b { transition: color .5s ease; }
+html.motion .loop4 li.is-now b { color: var(--accent); }
+
+/* 光斑 */
+.loop4 li, .study { position: relative; overflow: hidden; }
+.loop4 li::after, .study::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity .4s ease;
+  background: radial-gradient(300px circle at var(--mx, 50%) var(--my, 50%), rgba(232, 105, 43, .14), transparent 70%);
+}
+.loop4 li:hover::after, .study:hover::after { opacity: 1; }
+.study > * { position: relative; z-index: 1; }
+
+/* 世界模型：四层从底向上展开 */
+.stairs li:nth-child(1) { --n: 3; } .stairs li:nth-child(2) { --n: 2; }
+.stairs li:nth-child(3) { --n: 1; } .stairs li:nth-child(4) { --n: 0; }
+html.motion .stairs li {
+  clip-path: inset(0 100% 0 0);
+  transition: clip-path 1.25s var(--ease); transition-delay: calc(var(--n) * 170ms);
+}
+html.motion .stairs.is-in li { clip-path: inset(0 0 0 0); }
+
+/* 成果图：擦开 + 视差 */
+.mask { overflow: hidden; }
+html.motion .mask { clip-path: inset(0 0 100% 0); transition: clip-path 1.4s var(--ease); }
+html.motion .is-in .mask { clip-path: inset(0 0 0 0); }
+html.motion .duo .mask img { will-change: transform; transform: scale(1.14); }
+.duo .mask + .mask { transition-delay: .14s; }
+html.motion .case__fig.reveal { transform: none; }
+html.motion .case__fig figcaption { transition: opacity .8s ease .5s; opacity: 0; }
+html.motion .case__fig.is-in figcaption { opacity: 1; }
+
+/* 按钮：填充 + 磁吸 */
+.btn { position: relative; overflow: hidden; isolation: isolate; transition: transform .55s var(--ease), color .3s, border-color .3s; }
+.btn::before {
+  content: ""; position: absolute; inset: -1px; z-index: -1; background: var(--on-ink);
+  transform: translate3d(0, 102%, 0); transition: transform .55s var(--ease);
+}
+.btn:hover { color: var(--ink); border-color: var(--on-ink); }
+.btn:hover::before { transform: none; }
+.btn--solid:hover { color: #140a05; background: var(--accent); border-color: var(--accent); }
+.btn--solid::before { background: #f7ab7f; }
+.nav .nav__cta { transition: color .2s, border-color .3s, transform .55s var(--ease); }
+
+/* 细节过渡 */
+.logos li { transition: background .3s ease; }
+.logos li:hover { background: #fbf9f4; }
+.fields li, .howto li, .trio > div { transition: transform .5s var(--ease); }
+@media (hover: hover) {
+  .fields li:hover, .howto li:hover { transform: translate3d(6px, 0, 0); }
+}
+.phone { background: linear-gradient(currentColor, currentColor) 0 100% / 0 1px no-repeat; transition: background-size .6s var(--ease); }
+.phone:hover { text-decoration: none; background-size: 100% 1px; }
+
+/* 飞轮：桌面固定，滚动带动一圈走完 */
+.r2 { display: none; }
+.c2 { transition: opacity .3s ease; }
+.nodes circle, .nodes text { transition: fill .4s ease, stroke .4s ease; }
+@media (min-width: 1081px) {
+  html.motion #rsi { padding-bottom: 0; }
+  html.motion .pin { height: 300vh; }
+  html.motion .pin__sticky { position: sticky; top: 0; height: 100vh; display: flex; align-items: center; }
+  html.motion .fly { width: 100%; margin-top: 0; }
+  html.motion .r1 { display: none; }
+  html.motion .r2 {
+    display: block; fill: none; stroke: var(--accent); stroke-width: 2.5; stroke-dasharray: 100;
+    stroke-dashoffset: var(--o, 100); transform-origin: 200px 200px; transform: rotate(-90deg);
+  }
+  html.motion .nodes g.is-on circle { fill: var(--accent); stroke: var(--accent); }
+  html.motion .nodes g.is-on text { fill: #140a05; }
+  html.motion .steps li.reveal, html.motion .steps li.reveal.is-in { opacity: .3; transform: none; transition: opacity .45s ease; }
+  html.motion .steps li.reveal.is-on { opacity: 1; }
+}
+
+/* 联系区：从圆角卡片展开成全屏 */
+html.motion .contact { will-change: clip-path; }
+
+@media (prefers-reduced-motion: reduce) {
+  .btn, .btn::before, .nav__ind, .top, .phone { transition: none; }
+}

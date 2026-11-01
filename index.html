@@ -14,10 +14,12 @@
 <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
 <link rel="preload" href="assets/fonts/serif-sc.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="assets/css/site.css">
-<script>document.documentElement.classList.add('js')</script>
+<link rel="stylesheet" href="assets/css/motion.css">
+<script>(function(d,w){var h=d.documentElement;h.classList.add('js');if(!w.matchMedia('(prefers-reduced-motion: reduce)').matches)h.classList.add('motion');w.setTimeout(function(){if(!w.__site)h.classList.remove('js','motion')},3000)})(document,window)</script>
 </head>
 <body>
 <a class="skip" href="#main">跳到正文</a>
+<div class="progress" aria-hidden="true"></div>
 
 <header class="top" id="top">
   <div class="top__in">
@@ -142,11 +144,13 @@
       <p class="lede reveal">之所以叫自我改进而不是优化，是因为每转一圈，变强的不只是那个方案，还有 AI 手里的工具和它所处的世界本身。</p>
     </div>
   </div>
+  <div class="pin"><div class="pin__sticky">
   <div class="wrap fly">
     <div class="fly__ring reveal" aria-hidden="true">
       <svg viewBox="0 0 400 400">
         <circle class="r0" cx="200" cy="200" r="168"/>
         <circle class="r1" cx="200" cy="200" r="168" pathLength="100"/>
+        <circle class="r2" cx="200" cy="200" r="168" pathLength="100"/>
         <g class="nodes">
           <g transform="translate(200 32)"><circle r="19"/><text y="6">1</text></g>
           <g transform="translate(359.8 148.1)"><circle r="19"/><text y="6">2</text></g>
@@ -166,6 +170,7 @@
       <li class="reveal"><div><h3>下一圈：世界更真，AI 更强</h3></div><span class="tag">增益待测量</span></li>
     </ol>
   </div>
+  </div></div>
 </section>
 
 <section class="sec sec--deep" id="proof">
@@ -378,6 +383,7 @@
   </div>
 </footer>
 
+<script src="assets/js/vendor/lenis.min.js" defer></script>
 <script src="assets/js/site.js" defer></script>
 </body>
 </html>
