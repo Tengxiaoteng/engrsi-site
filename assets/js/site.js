@@ -97,6 +97,46 @@
     });
   }
 
+  /* ---------- 三维展示 ---------- */
+
+  var views = $$('[data-stage]');
+  (function () {
+    var save = navigator.connection && navigator.connection.saveData;
+    var gl = null;
+    try { gl = !save && document.createElement('canvas').getContext('webgl2'); } catch (e) { gl = null; }
+    if (!gl) { views = []; return; }
+    var lose = gl.getExtension('WEBGL_lose_context');
+    if (lose) lose.loseContext();
+    /* 在量页面高度之前放出来，否则翻页位置要多算一次 */
+    views.forEach(function (v) { v.hidden = false; });
+  })();
+
+  function mountViews() {
+    function fail() {
+      views.forEach(function (v) { v.hidden = true; });
+      if (motion) measure();
+    }
+    var s = document.createElement('script');
+    s.src = 'assets/js/stage.min.js';
+    s.async = true;
+    s.onerror = fail;
+    s.onload = function () {
+      var idle = window.requestIdleCallback || function (f) { return setTimeout(f, 60); };
+      views.forEach(function (v, i) {
+        idle(function () {
+          try {
+            if (v.dataset.stage === 'blade') window.EngStage.blade(v);
+            else window.EngStage.show(v, $$('.fields li'));
+          } catch (e) {
+            v.hidden = true;
+            if (motion) measure();
+          }
+        });
+      });
+    };
+    document.head.appendChild(s);
+  }
+
   /* ---------- 翻页结构 ---------- */
 
   var pages = [];
@@ -110,17 +150,27 @@
   /* ---------- 进入动效 ---------- */
 
   var items = $$('.reveal');
+  var seen = null;
+
+  /* 内容必须赶在下一页盖上来之前出现：滚得快时不演完整动画 */
+  function show(el) {
+    if (el.classList.contains('is-in')) return;
+    var quick = lenis && Math.abs(lenis.velocity) > 16;
+    if (quick) el.classList.add('quick');
+    el.classList.add('is-in');
+    if (seen) seen.unobserve(el);
+    if (!quick && el.classList.contains('stats')) countUp(el);
+  }
+
   if (!motion || !('IntersectionObserver' in window)) {
     items.forEach(function (el) { el.classList.add('is-in'); });
   } else {
-    var seen = new IntersectionObserver(function (entries) {
+    /* 下边界外扩：元素进入视口之前就开始，进屏时已经在显示 */
+    seen = new IntersectionObserver(function (entries) {
       entries.forEach(function (entry) {
-        if (!entry.isIntersecting) return;
-        entry.target.classList.add('is-in');
-        if (entry.target.classList.contains('stats')) countUp(entry.target);
-        seen.unobserve(entry.target);
+        if (entry.isIntersecting) show(entry.target);
       });
-    }, { rootMargin: '0px 0px -10% 0px', threshold: 0.04 });
+    }, { rootMargin: '0px 0px 14% 0px', threshold: 0 });
     items.forEach(function (el) { seen.observe(el); });
   }
 
@@ -134,7 +184,7 @@
       if (isNaN(value)) return;
       var decimals = (text.split('.')[1] || '').length;
       var begin = performance.now() + n * 70;
-      var span = 1700;
+      var span = 1100;
       function fmt(v) {
         var s = v.toFixed(decimals).split('.');
         s[0] = s[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
@@ -235,6 +285,7 @@
   /* ---------- 滚动联动 ---------- */
 
   var hero = $('.hero');
+  var foot = $('.foot');
   var heroIn = $('.hero__in');
   var canvas = $('#evolve');
   var bar = $('.progress');
@@ -270,15 +321,20 @@
   function measure() {
     m.vh = window.innerHeight;
     m.vw = window.innerWidth;
+
+    /* 最后一页连同页脚要填满一屏，否则倒数第二页永远盖不完 */
+    if (pages.length) pages[pages.length - 1].style.minHeight = Math.max(0, m.vh - foot.offsetHeight) + 'px';
     m.max = Math.max(1, document.documentElement.scrollHeight - m.vh);
 
     var sum = 0;
     pages.forEach(function (pg) {
       var h = pg.offsetHeight;
+      var hold = parseFloat(getComputedStyle(pg).marginBottom) || 0;
       pg.__top = sum;
       pg.__h = h;
+      pg.__hold = hold;
       pg.style.top = Math.min(0, m.vh - h) + 'px';
-      sum += h;
+      sum += h + hold;
     });
     pages.forEach(function (pg, i) {
       var next = pages[i + 1];
@@ -336,10 +392,25 @@
       var k = clamp((y - pg.__start) / pg.__len);
       var covered = y >= pg.__cover;
       var key = covered ? 2 : (k <= 0 ? 0 : 1);
+
+      /* 快到页尾：还没进场的内容一次放完，不留给下一页去盖 */
+      if (!pg.__shown && y >= pg.__start - pg.__hold - m.vh * 0.2) {
+        pg.__shown = true;
+        $$('.reveal', pg).forEach(show);
+      }
+
+      /* 只有正在翻和即将翻的页留合成层，其余页不占显存 */
+      var near = y > pg.__start - m.vh * 1.1 && !covered;
+      if (near !== pg.__near) {
+        pg.__near = near;
+        pg.classList.toggle('is-near', near);
+      }
+
       if (key === 1) {
-        var e = ease(k);
-        if (fine) pg.style.transform = 'scale(' + (1 - e * 0.055).toFixed(4) + ')';
-        pg.style.opacity = (1 - e * 0.62).toFixed(3);
+        /* 下一屏露头时上一屏先不动，留给还在读的人 */
+        var e = ease(seg(k, 0.2, 1));
+        if (fine) pg.style.transform = 'scale(' + (1 - e * 0.04).toFixed(4) + ')';
+        pg.style.opacity = (1 - e * 0.5).toFixed(3);
       }
       if (key === pg.__state) return;
       pg.__state = key;
@@ -713,6 +784,7 @@
     var idle = window.requestIdleCallback || function (f) { return setTimeout(f, 300); };
     idle(function () {
       $$('img[loading="lazy"]').forEach(function (img) { img.loading = 'eager'; });
+      if (views.length) mountViews();
     });
   });
 
