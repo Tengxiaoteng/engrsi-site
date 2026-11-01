@@ -80,7 +80,7 @@
 
     /* 成组依次进场 */
     $$('.trio, .fields, .howto, .logos, .stats, .honors, .values, .goals, .facts').forEach(function (group) {
-      group.classList.add('group');
+      group.classList.add('stagger');
       if (!group.classList.contains('reveal')) group.classList.add('reveal');
       Array.prototype.slice.call(group.children).forEach(function (child, i) {
         child.classList.add('rise');

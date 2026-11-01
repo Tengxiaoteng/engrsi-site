@@ -55,7 +55,7 @@ html.motion h1 .ch { transition-delay: calc(var(--i) * 30ms + 160ms); }
 html.motion.ready h1 .ch { opacity: 1; transform: none; }
 
 /* 成组依次进场 */
-html.js .reveal.group { opacity: 1; transform: none; transition: none; }
+html.js .reveal.stagger { opacity: 1; transform: none; transition: none; }
 html.motion .rise {
   opacity: 0; transform: translate3d(0, 28px, 0);
   transition: opacity .8s ease, transform 1.05s var(--ease);
