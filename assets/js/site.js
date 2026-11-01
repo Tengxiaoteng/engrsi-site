@@ -126,6 +126,7 @@
         idle(function () {
           try {
             if (v.dataset.stage === 'blade') window.EngStage.blade(v);
+            else if (v.dataset.stage === 'world') window.EngStage.world(v, $$('.stairs li'));
             else window.EngStage.show(v, $$('.fields li'));
           } catch (e) {
             v.hidden = true;
@@ -146,6 +147,18 @@
     pages[pages.length - 1].classList.add('page--last');
     if (fine) root.classList.add('turn');
   }
+
+  /* 每页内容包一层，放不下时整体等比缩小，保证一屏显示完 */
+  var fits = [];
+  pages.forEach(function (pg) {
+    if (pg.classList.contains('hero')) return;
+    var host = $('.pin__sticky', pg) || pg;
+    var box = document.createElement('div');
+    box.className = 'fit';
+    while (host.firstChild) box.appendChild(host.firstChild);
+    host.appendChild(box);
+    fits.push({ box: box, pg: pg, host: host });
+  });
 
   /* ---------- 进入动效 ---------- */
 
@@ -242,12 +255,11 @@
     lenis = new window.Lenis({ autoRaf: false, lerp: 0.095, wheelMultiplier: 0.95 });
   }
 
-  function glide(y, duration) {
-    lenis.scrollTo(clamp(y, 0, m.max), {
-      duration: duration,
-      easing: function (t) { return t < 0.5 ? 8 * t * t * t * t : 1 - Math.pow(-2 * t + 2, 4) / 2; },
-      lock: false
-    });
+  function easeInOut(t) { return t < 0.5 ? 8 * t * t * t * t : 1 - Math.pow(-2 * t + 2, 4) / 2; }
+  function easeOut(t) { return 1 - Math.pow(1 - t, 3); }
+
+  function glide(y, duration, curve) {
+    lenis.scrollTo(clamp(y, 0, m.max), { duration: duration, easing: curve || easeInOut, lock: false });
   }
 
   document.addEventListener('click', function (e) {
@@ -265,21 +277,35 @@
     history.replaceState(null, '', '#' + id);
   });
 
+  /* 翻一整页。比一屏长的区段（飞轮）在内部先走完 */
+  function hopTo(from, dir) {
+    var st = m.stops, hop = m.vh * 0.88, i = 0, s;
+    if (dir > 0) {
+      while (i < st.length - 1 && st[i + 1].a <= from + 2) i++;
+      s = st[i];
+      if (s.b - s.a > m.vh && from < s.b - 2) return Math.min(from + hop, s.b);
+      return i < st.length - 1 ? st[i + 1].a : m.max;
+    }
+    while (i < st.length - 1 && st[i + 1].a < from - 2) i++;
+    s = st[i];
+    if (s.b - s.a > m.vh) return from > s.b + 2 ? s.b : Math.max(from - hop, s.a);
+    return s.a;
+  }
+
   /* 键盘翻页也走同一条平滑曲线 */
   document.addEventListener('keydown', function (e) {
     if (!lenis || e.altKey || e.ctrlKey || e.metaKey) return;
     var tag = e.target.tagName;
     if (e.key === ' ' && (tag === 'BUTTON' || tag === 'A')) return;
     var from = lenis.targetScroll;
-    var hop = m.vh * 0.88;
     var to = null;
-    if (e.key === 'PageDown' || (e.key === ' ' && !e.shiftKey)) to = from + hop;
-    else if (e.key === 'PageUp' || (e.key === ' ' && e.shiftKey)) to = from - hop;
+    if (e.key === 'PageDown' || (e.key === ' ' && !e.shiftKey)) to = hopTo(from, 1);
+    else if (e.key === 'PageUp' || (e.key === ' ' && e.shiftKey)) to = hopTo(from, -1);
     else if (e.key === 'Home') to = 0;
     else if (e.key === 'End') to = m.max;
     if (to === null) return;
     e.preventDefault();
-    glide(to, 1.05);
+    glide(to, 0.85);
   });
 
   /* ---------- 滚动联动 ---------- */
@@ -295,11 +321,13 @@
   var steps = $$('.steps li');
   var nodes = $$('.nodes g');
   var r2 = $('.r2');
+  var head = $('.head');
+  var ringWide = $('.fly__ring');
   var label = $('.c2');
   var parallax = $$('.duo .mask img');
   var LABELS = ['AI 设计方案', '打分、留痕', '校准世界', '给自己造工具', '下一圈'];
 
-  var m = { vh: 1, vw: 1, max: 1, loop: 0, pin: 0, pinLen: 1, par: [], tops: [], ids: [] };
+  var m = { vh: 1, vw: 1, max: 1, loop: 0, pin: 0, pinLen: 1, par: [], tops: [], ids: [], stops: [{ a: 0, b: 0 }] };
   var lastY = -1;
   var lastStep = -1;
   var lastDir = 0;
@@ -318,9 +346,24 @@
     return t + (n ? n.__top : 0);
   }
 
+  function fit() {
+    var low = m.vw > 820 ? 0.6 : 0.88;
+    fits.forEach(function (f) {
+      var cs = getComputedStyle(f.pg);
+      var pad = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
+      if (f.host !== f.pg && pad < 1) pad = m.vh * 0.1;
+      if (f.pg.classList.contains('page--last')) pad += foot.offsetHeight;
+      var h = f.box.offsetHeight;
+      var z = clamp((m.vh - pad) / h, low, 1);
+      f.box.style.transform = z < 1 ? 'scale(' + z.toFixed(4) + ')' : '';
+      f.box.style.marginBottom = z < 1 ? (-h * (1 - z)).toFixed(1) + 'px' : '';
+    });
+  }
+
   function measure() {
     m.vh = window.innerHeight;
     m.vw = window.innerWidth;
+    fit();
 
     /* 最后一页连同页脚要填满一屏，否则倒数第二页永远盖不完 */
     if (pages.length) pages[pages.length - 1].style.minHeight = Math.max(0, m.vh - foot.offsetHeight) + 'px';
@@ -342,6 +385,9 @@
       pg.__start = next.__top - m.vh;
       pg.__len = Math.max(1, Math.min(m.vh, m.max - pg.__start));
       pg.__cover = next.__top;
+    });
+    m.stops = pages.map(function (pg, i) {
+      return { a: pg.__top, b: i < pages.length - 1 ? pg.__start : m.max };
     });
 
     if (loop4) m.loop = layoutTop(loop4);
@@ -432,7 +478,7 @@
 
     /* 想 做 验 改 */
     if (loop4) {
-      var lp = clamp((m.vh * 0.86 - (m.loop - y)) / (m.vh * 0.62));
+      var lp = clamp((m.vh * 0.86 - (m.loop - y)) / (m.vh * 0.46));
       loop4.style.setProperty('--lp', lp.toFixed(3));
       var now = Math.min(3, Math.floor(lp * 4));
       loopItems.forEach(function (li, i) {
@@ -452,6 +498,11 @@
     if (pin && desktop.matches) {
       var fp = clamp((y - m.pin) / m.pinLen);
       r2.style.setProperty('--o', (100 - fp * 100).toFixed(2));
+      if (head) {
+        var ang = fp * Math.PI * 2;
+        head.setAttribute('transform', 'rotate(' + (ang * 180 / Math.PI).toFixed(2) + ' 200 200)');
+        ringWide.style.setProperty('--g', fp.toFixed(3));
+      }
       var step = Math.min(4, Math.floor(fp * 5));
       if (step !== lastStep) {
         lastStep = step;
@@ -741,6 +792,15 @@
     }
   }
 
+  /* ---------- 循环动画：只在看得见时跑 ---------- */
+
+  if (motion && 'IntersectionObserver' in window) {
+    var live = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) { entry.target.classList.toggle('is-live', entry.isIntersecting); });
+    }, { rootMargin: '10% 0px 10% 0px' });
+    $$('[data-live]').forEach(function (el) { live.observe(el); });
+  }
+
   /* ---------- 主循环：滚动和画布共用一个 rAF ---------- */
 
   var timer;
@@ -759,10 +819,38 @@
     }, 120);
   });
 
+  /* 不停在两页之间。看滚动目标而不是当前位置：松手后马上判断，不用等惯性走完；
+     朝滚动方向越过停留区就翻过去，否则退回 */
+  var snapT = 0, snapDir = 1, snapAt = 0, settled = true;
+
+  function snap(now) {
+    var t = lenis.targetScroll;
+    if (Math.abs(t - snapT) > 0.5) {
+      snapDir = t > snapT ? 1 : -1;
+      snapT = t;
+      snapAt = now;
+      settled = false;
+      return;
+    }
+    if (settled || now - snapAt < 110) return;
+    settled = true;
+    var st = m.stops, i;
+    for (i = 0; i < st.length - 1; i++) {
+      if (t <= st[i].b + 1) return;
+      if (t < st[i + 1].a - 1) {
+        var k = (t - st[i].b) / (st[i + 1].a - st[i].b);
+        var go = snapDir > 0 ? k > 0.015 : k > 0.985;
+        glide(go ? st[i + 1].a : st[i].b, 0.7, easeOut);
+        return;
+      }
+    }
+  }
+
   function tick(now) {
     if (lenis) lenis.raf(now);
     var y = lenis ? lenis.animatedScroll : window.scrollY;
     update(y);
+    if (lenis && fine) snap(now);
     if (ctx && y < m.vh && !document.hidden) drawHero(now);
     else lastT = 0;
     requestAnimationFrame(tick);

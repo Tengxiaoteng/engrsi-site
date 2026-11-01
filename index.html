@@ -15,6 +15,7 @@
 <link rel="preload" href="assets/fonts/serif-sc.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="assets/css/site.css">
 <link rel="stylesheet" href="assets/css/motion.css">
+<link rel="stylesheet" href="assets/css/rich.css">
 <script>(function(d,w){var h=d.documentElement;h.classList.add('js');if(!w.matchMedia('(prefers-reduced-motion: reduce)').matches)h.classList.add('motion');w.setTimeout(function(){if(!w.__site)h.classList.remove('js','motion')},3000)})(document,window)</script>
 </head>
 <body>
@@ -60,35 +61,82 @@
 
 <section class="sec sec--paper" id="thesis">
   <div class="wrap grid">
-    <p class="label"><span>01</span>我们的判断</p>
+    <p class="label" data-n="01"><span>01</span>我们的判断</p>
     <div class="body">
       <h2 class="reveal">AI 已经学会写软件，<br>还不会造硬件。</h2>
       <div class="cols reveal">
         <p>软件世界天然给了 AI 一样东西：立刻知道对错的环境。编译器会报错，测试会失败，程序跑起来就有结果。AI 每做一步都能得到反馈，犯错几乎不花钱。</p>
         <p>硬件世界没有这样的东西。要知道一片涡轮叶片设计得对不对，得算流动、算传热、算应力，最后还得做试验，一轮下来以月计、以百万计。</p>
       </div>
-      <table class="compare reveal">
-        <caption class="vh">软件世界与硬件世界的对比</caption>
-        <thead><tr><th scope="col"></th><th scope="col">软件世界</th><th scope="col">硬件世界</th></tr></thead>
-        <tbody>
-          <tr><th scope="row">对错反馈</th><td>编译与测试，立刻知道</td><td>仿真与试验，以月计</td></tr>
-          <tr><th scope="row">犯错代价</th><td>几乎不花钱</td><td>以百万计</td></tr>
-          <tr><th scope="row">AI 的角色</th><td>独立完成任务，开始改进自己</td><td>大多停留在画图助手和替代仿真的小模型</td></tr>
-        </tbody>
-      </table>
       <p class="claim reveal">所以瓶颈不在模型，在世界。差的是一个能让 AI 犯错、被打分、被纠正的地方。</p>
     </div>
   </div>
 </section>
 
+<section class="sec sec--paper">
+  <div class="wrap">
+      <div class="worlds reveal">
+        <article class="wcard wcard--soft" data-live>
+          <h3>软件世界</h3>
+          <div class="term" aria-hidden="true">
+            <p class="t1"><i>$</i> 运行测试</p>
+            <p class="t2"><b>✗</b> 1 项失败</p>
+            <p class="t3"><i>$</i> 修改，再运行</p>
+            <p class="t4"><u>✓</u> 全部通过</p>
+          </div>
+          <dl>
+            <div><dt>对错反馈</dt><dd>编译与测试，立刻知道</dd></div>
+            <div><dt>犯错代价</dt><dd>几乎不花钱</dd></div>
+            <div><dt>AI 的角色</dt><dd>独立完成任务，开始改进自己</dd></div>
+          </dl>
+        </article>
+        <article class="wcard wcard--hard" data-live>
+          <h3>硬件世界</h3>
+          <div class="crawl" aria-hidden="true">
+            <ol><li>算流动</li><li>算传热</li><li>算应力</li><li>做试验</li></ol>
+            <div class="crawl__bar"><i></i></div>
+            <p>一轮下来，以月计</p>
+          </div>
+          <dl>
+            <div><dt>对错反馈</dt><dd>仿真与试验，以月计</dd></div>
+            <div><dt>犯错代价</dt><dd>以百万计</dd></div>
+            <div><dt>AI 的角色</dt><dd>大多停留在画图助手和替代仿真的小模型</dd></div>
+          </dl>
+        </article>
+      </div>
+  </div>
+</section>
+
 <section class="sec sec--ink" id="harness">
   <div class="wrap grid">
-    <p class="label"><span>02</span>为企业构建 Harness</p>
+    <p class="label" data-n="02"><span>02</span>为企业构建 Harness</p>
     <div class="body">
       <h2 class="reveal">把大模型，<br><i class="nb">变成企业自己的</i><i class="nb">生产能力。</i></h2>
       <p class="lede reveal">大模型负责理解需求、推理和生成方案。Harness 负责其余的一切：拆解任务、组织工具、管理上下文、处理反馈。它把通用智能接入企业真实的工具、规范和数据，让 AI 从回答问题走向把工作做完，并且做对。</p>
     </div>
   </div>
+  <div class="wrap">
+    <div class="arch reveal" data-live>
+      <div class="arch__side">
+        <p class="k">大模型</p>
+        <ul><li>理解需求</li><li>推理</li><li>生成方案</li></ul>
+      </div>
+      <i class="arch__wire" aria-hidden="true"></i>
+      <div class="arch__core">
+        <p class="arch__name">Harness</p>
+        <ul><li>拆解任务</li><li>组织工具</li><li>管理上下文</li><li>处理反馈</li></ul>
+      </div>
+      <i class="arch__wire arch__wire--back" aria-hidden="true"></i>
+      <div class="arch__side">
+        <p class="k">企业</p>
+        <ul><li>真实的工具</li><li>规范</li><li>数据</li></ul>
+      </div>
+      <p class="arch__out">从回答问题，走向把工作做完，并且做对</p>
+    </div>
+  </div>
+</section>
+
+<section class="sec sec--ink">
   <div class="wrap">
     <ol class="loop4">
       <li class="reveal"><b>想</b><h3>认知决策</h3><p>大模型理解目标、进行工程推理；Harness 拆解任务、规划流程，组织生成多个候选方案。</p></li>
@@ -97,8 +145,12 @@
       <li class="reveal"><b>改</b><h3>学习进化</h3><p>把成功经验与失败原因沉淀为可复用的知识，逐步改进系统自身的决策和执行机制。</p></li>
     </ol>
   </div>
-  <div class="wrap grid">
-    <p class="label label--sub">产品形态</p>
+</section>
+
+<section class="sec sec--ink">
+  <div class="wrap prod">
+    <div>
+      <p class="label label--sub">产品形态</p>
     <div class="body deliver reveal">
       <div>
         <h3>打开就能用的工程设计软件</h3>
@@ -109,25 +161,40 @@
         <div><dt>私有部署</dt><dd>面向央企与科研院所，一次授权加年度服务。</dd></div>
       </dl>
     </div>
+    </div>
+    <figure class="app" data-live>
+      <div class="app__win" aria-hidden="true">
+        <div class="app__bar"><i></i><i></i><i></i><span>EngRSI 工程设计</span></div>
+        <div class="app__body">
+          <div class="app__task">
+            <p class="k">任务书</p>
+            <p>设计一片带内部冷却结构的涡轮叶片，可直接三维打印。</p>
+            <p class="k">约束</p>
+            <p>金属温度不超过许用值</p>
+          </div>
+          <ol class="app__steps">
+            <li>叶型</li><li>内部冷却结构</li><li>仿真复核</li><li>模型与报告</li>
+          </ol>
+          <div class="app__out">
+            <img src="assets/img/blade-xray.webp" alt="" width="1400" height="1400" loading="lazy" decoding="async">
+            <p>最高金属温度 1308 K<br>许用 1340 K</p>
+          </div>
+        </div>
+      </div>
+      <figcaption>界面示意，用于说明产品流程。</figcaption>
+    </figure>
   </div>
 </section>
 
 <section class="sec sec--paper" id="world">
   <div class="wrap grid">
-    <p class="label"><span>03</span>工业世界模型</p>
+    <p class="label" data-n="03"><span>03</span>工业世界模型</p>
     <div class="body">
       <h2 class="reveal">一个让 AI 可以犯错的<br>物理世界。</h2>
       <p class="lede reveal">它不是一个仿真软件。四层物理判断从下往上越贵、越接近真实，贵的一层校准便宜的一层。AI 大部分时间在便宜的层里快速试错，只在必要时才去贵的层求证。</p>
     </div>
   </div>
   <div class="wrap">
-    <ol class="stairs reveal" aria-label="世界模型的四层判断，从最接近真实到成本最低">
-      <li style="--w:100%"><span class="stairs__t">天到周</span><h3>真实试验</h3><p>公开试验数据与客户实测，世界的最终标尺</p></li>
-      <li style="--w:82%"><span class="stairs__t">小时</span><h3>高精度仿真</h3><p>流动、传热、应力一起算，证明方案在计算上成立</p></li>
-      <li style="--w:64%"><span class="stairs__t">秒到分钟</span><h3>快速估算</h3><p>一维物理网络与工程关联式，AI 搜索方案的主战场</p></li>
-      <li style="--w:46%"><span class="stairs__t">秒</span><h3>规则初筛</h3><p>几何合法、可制造、不违反硬约束</p></li>
-    </ol>
-    <p class="pull reveal"><i class="nb">AI 在这里犯错的代价</i><i class="nb">是几秒到几小时，</i><br><i class="nb">不是几年和几亿。</i></p>
     <div class="trio reveal">
       <div><h3>分层的物理判断</h3><p>每一层都给 AI 打分，并告诉它错在哪。</p></div>
       <div><h3>诚实的账本</h3><p>每个判断带着可信度，每个方案留下痕迹，设计一改，旧结论自动作废。缺少依据的问题，明确回答“不可评价”。</p></div>
@@ -136,14 +203,25 @@
   </div>
 </section>
 
-<section class="sec sec--ink" id="rsi">
-  <div class="wrap grid">
-    <p class="label"><span>04</span>递归自我改进</p>
-    <div class="body">
-      <h2 class="reveal">世界越真，AI 越强；<br>AI 越强，世界越真。</h2>
-      <p class="lede reveal">之所以叫自我改进而不是优化，是因为每转一圈，变强的不只是那个方案，还有 AI 手里的工具和它所处的世界本身。</p>
+<section class="sec sec--paper">
+  <div class="wrap">
+    <div class="layers">
+    <figure class="view view--bare" data-stage="world" hidden>
+      <div class="view__box"><canvas aria-hidden="true"></canvas></div>
+      <figcaption>同一片叶片截面的四层判断，三维示意。</figcaption>
+    </figure>
+    <ol class="stairs reveal" aria-label="世界模型的四层判断，从最接近真实到成本最低">
+      <li style="--w:100%"><span class="stairs__t">天到周</span><h3>真实试验</h3><p>公开试验数据与客户实测，世界的最终标尺</p></li>
+      <li style="--w:82%"><span class="stairs__t">小时</span><h3>高精度仿真</h3><p>流动、传热、应力一起算，证明方案在计算上成立</p></li>
+      <li style="--w:64%"><span class="stairs__t">秒到分钟</span><h3>快速估算</h3><p>一维物理网络与工程关联式，AI 搜索方案的主战场</p></li>
+      <li style="--w:46%"><span class="stairs__t">秒</span><h3>规则初筛</h3><p>几何合法、可制造、不违反硬约束</p></li>
+    </ol>
     </div>
+    <p class="pull reveal"><i class="nb">AI 在这里犯错的代价</i><i class="nb">是几秒到几小时，</i><br><i class="nb">不是几年和几亿。</i></p>
   </div>
+</section>
+
+<section class="sec sec--ink" id="rsi">
   <div class="pin"><div class="pin__sticky">
   <div class="wrap fly">
     <div class="fly__ring reveal" aria-hidden="true">
@@ -151,6 +229,9 @@
         <circle class="r0" cx="200" cy="200" r="168"/>
         <circle class="r1" cx="200" cy="200" r="168" pathLength="100"/>
         <circle class="r2" cx="200" cy="200" r="168" pathLength="100"/>
+        <circle class="r3" cx="200" cy="200" r="190"/>
+        <circle class="r4" cx="200" cy="200" r="214"/>
+        <circle class="head" cx="200" cy="32" r="6"/>
         <g class="nodes">
           <g transform="translate(200 32)"><circle r="19"/><text y="6">1</text></g>
           <g transform="translate(359.8 148.1)"><circle r="19"/><text y="6">2</text></g>
@@ -162,6 +243,10 @@
         <text class="c2" x="200" y="226">每一圈都更强</text>
       </svg>
     </div>
+    <div class="fly__text">
+      <p class="label"><span>04</span>递归自我改进</p>
+      <h2 class="reveal">世界越真，AI 越强；<br>AI 越强，世界越真。</h2>
+      <p class="lede reveal">之所以叫自我改进而不是优化，是因为每转一圈，变强的不只是那个方案，还有 AI 手里的工具和它所处的世界本身。</p>
     <ol class="steps">
       <li class="reveal"><div><h3>AI 在世界模型里设计方案</h3></div><span class="tag tag--done">已做到</span></li>
       <li class="reveal"><div><h3>每个方案被打分、留痕</h3></div><span class="tag tag--done">已做到</span></li>
@@ -169,20 +254,18 @@
       <li class="reveal"><div><h3>AI 给自己造工具、改进流程</h3></div><span class="tag tag--done">已开始</span></li>
       <li class="reveal"><div><h3>下一圈：世界更真，AI 更强</h3></div><span class="tag">增益待测量</span></li>
     </ol>
+    </div>
   </div>
   </div></div>
 </section>
 
 <section class="sec sec--deep" id="proof">
-  <div class="wrap grid">
-    <p class="label"><span>05</span>已经做到的事</p>
-    <div class="body">
+  <div class="wrap duplex">
+    <div>
+      <p class="label" data-n="05"><span>05</span>已经做到的事</p>
       <h2 class="reveal">第一圈已经转起来。</h2>
       <p class="lede reveal">我们从高端装备里最难的零件之一开始：涡轮冷却叶片。燃气温度高于金属熔点，叶片靠内部冷气才能活着。做成了它，别的零件的设计链大多是它的子集。</p>
     </div>
-  </div>
-
-  <div class="wrap">
     <figure class="view" data-stage="blade" hidden>
       <div class="view__box">
         <canvas aria-hidden="true"></canvas>
@@ -197,7 +280,9 @@
       <figcaption>三维示意模型，用于说明结构原理，并非交付的设计数据。可拖动旋转。</figcaption>
     </figure>
   </div>
+</section>
 
+<section class="sec sec--deep">
   <article class="case wrap">
     <figure class="case__fig reveal duo">
       <img src="assets/img/blade-solid.webp" alt="AI 设计的涡轮叶片三维实体渲染，可见顶部气膜孔" width="1400" height="1400" loading="lazy" decoding="async">
@@ -214,7 +299,9 @@
       </ul>
     </div>
   </article>
+</section>
 
+<section class="sec sec--deep">
   <article class="case case--flip wrap">
     <figure class="case__fig case__fig--light reveal">
       <img src="assets/img/c3x-compare.webp" alt="EngRSI 世界模型计算的壁温曲线与 NASA C3X 实测数据点的对照图，两个工况基本重合" width="1612" height="1285" loading="lazy" decoding="async">
@@ -230,7 +317,9 @@
       </ul>
     </div>
   </article>
+</section>
 
+<section class="sec sec--deep">
   <article class="case wrap">
     <figure class="case__fig reveal">
       <img src="assets/img/temperature-field.webp" alt="AI 设计叶片的金属截面温度场，最高 1308 K" width="1045" height="810" loading="lazy" decoding="async">
@@ -244,7 +333,9 @@
       <p class="quote">一个会说“做不到”的系统，<br>它说“做到了”的时候才值得信。</p>
     </div>
   </article>
+</section>
 
+<section class="sec sec--deep">
   <div class="wrap grid not-yet reveal">
     <p class="label label--sub">尚未做到的事</p>
     <ul class="body">
@@ -255,20 +346,12 @@
   </div>
 </section>
 
-<div class="pair">
 <section class="sec sec--paper" id="industry">
-  <div class="wrap grid">
-    <p class="label"><span>06</span>与工业界深度合作</p>
-    <div class="body">
+  <div class="wrap duplex">
+    <div>
+      <p class="label" data-n="06"><span>06</span>与工业界深度合作</p>
       <h2 class="reveal">从最难的零件开始，<br>走进每一条产业链。</h2>
       <p class="lede reveal">EngRSI 的核心框架不含任何叶片专属逻辑。换一套部件知识和仿真工具，就是另一个部件。我们和企业一起，把各自最核心的工程问题做成可验证的世界。</p>
-    </div>
-  </div>
-  <div class="wrap">
-    <figure class="view view--paper" data-stage="show" hidden>
-      <div class="view__box"><canvas aria-hidden="true"></canvas></div>
-      <figcaption>三维示意模型，点选下方行业切换，可拖动旋转。</figcaption>
-    </figure>
     <ul class="fields reveal">
       <li><h3>航空发动机</h3><p>涡轮冷却叶片，第一圈已跑通</p></li>
       <li><h3>商业航天</h3><p>燃烧与热防护</p></li>
@@ -276,7 +359,16 @@
       <li><h3>船舶</h3><p>耐压结构</p></li>
       <li><h3>建筑模板</h3><p>配模与报价</p></li>
     </ul>
+    </div>
+    <figure class="view view--paper" data-stage="show" hidden>
+      <div class="view__box"><canvas aria-hidden="true"></canvas></div>
+      <figcaption>三维示意模型，点选下方行业切换，可拖动旋转。</figcaption>
+    </figure>
+  </div>
+</section>
 
+<section class="sec sec--paper">
+  <div class="wrap">
     <article class="study reveal">
       <div class="study__head">
         <p class="eyebrow">合作规划 · 盐城良工建筑模板</p>
@@ -292,7 +384,11 @@
         <p class="small">以上为合作目标，将用良工的历史项目逐项验收。每一块板都能说出它为什么在那里，每一个数字都能追溯到一条公式或一条规则。</p>
       </div>
     </article>
+  </div>
+</section>
 
+<section class="sec sec--paper">
+  <div class="wrap">
     <div class="grid how">
       <p class="label label--sub">怎样和我们合作</p>
       <ol class="body howto reveal">
@@ -306,10 +402,10 @@
   </div>
 </section>
 
-<section class="sec sec--paper sec--tight" id="partners">
+<section class="sec sec--paper" id="partners">
   <div class="wrap">
     <div class="partners__head">
-      <p class="label"><span>07</span>团队合作伙伴</p>
+      <p class="label" data-n="07"><span>07</span>团队合作伙伴</p>
     </div>
     <p class="group">产业</p>
     <ul class="logos">
@@ -331,11 +427,9 @@
   </div>
 </section>
 
-</div>
-
 <section class="sec sec--ink" id="record">
   <div class="wrap grid">
-    <p class="label"><span>08</span>团队过往成果</p>
+    <p class="label" data-n="08"><span>08</span>团队过往成果</p>
     <div class="body">
       <h2 class="reveal">来自真实工程的积累。</h2>
       <p class="lede reveal">团队成果成功应用于中国航发、中国航天科工、中国船舶、哈电集团等多个头部企业及其下属科研院所，经权威机构鉴定认为成果总体达到国际先进水平。</p>
@@ -349,6 +443,17 @@
       <li><b>11<i>项</i></b><span>软件著作权</span></li>
       <li><b>60<i>余篇</i></b><span>高水平学术论文</span></li>
       <li><b>6<i>人</i></b><span>各级高层次人才</span></li>
+    </ul>
+  </div>
+</section>
+
+<section class="sec sec--ink">
+  <div class="wrap">
+    <ul class="domains reveal" aria-label="应用领域：空、天、海、陆">
+      <li><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M32 6c2.4 3 3 7 3 12v8l21 13v5l-21-6v11l7 5v3l-10-2-10 2v-3l7-5V38L8 44v-5l21-13v-8c0-5 .6-9 3-12z"/></svg><span>空</span></li>
+      <li><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M32 5c6 5 9 13 9 22v14H23V27c0-9 3-17 9-22zM23 33l-8 10v8l8-5M41 33l8 10v8l-8-5M27 41l-2 8h14l-2-8M28 50l4 10 4-10"/><circle cx="32" cy="24" r="4"/></svg><span>天</span></li>
+      <li><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M5 40h54l-7 13H13zM13 40V31h30l5 9M21 31V22h14v9M27 22v-8M9 58c4 0 4-2 8-2s4 2 8 2 4-2 8-2 4 2 8 2 4-2 8-2 4 2 8 2"/></svg><span>海</span></li>
+      <li><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M8 42h48a6 6 0 0 1 0 12H8a6 6 0 0 1 0-12zM12 42l4-10h30l6 10M22 32v-6h16l3 6M38 28h20"/><circle cx="14" cy="48" r="2.4"/><circle cx="26" cy="48" r="2.4"/><circle cx="38" cy="48" r="2.4"/><circle cx="50" cy="48" r="2.4"/></svg><span>陆</span></li>
     </ul>
     <ul class="honors reveal">
       <li>国家科学技术进步二等奖</li>
@@ -364,7 +469,7 @@
 
 <section class="sec sec--deep" id="about">
   <div class="wrap grid">
-    <p class="label"><span>09</span>关于我们</p>
+    <p class="label" data-n="09"><span>09</span>关于我们</p>
     <div class="body">
       <h2 class="reveal"><i class="nb">新秩序人工智能科技</i><i class="nb">（黑龙江）有限公司</i></h2>
       <p class="lede reveal">技术团队来自哈尔滨工业大学能源学院航空发动机研究所，长期深耕高端装备研发。我们相信，高端装备的研发不再是人在工具之间搬运结果，而是 AI 在一个越来越真的数字世界里进化出产品，由人决定要什么、判断可不可信。</p>
