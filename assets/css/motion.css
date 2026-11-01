@@ -1,7 +1,7 @@
 /* 动效层。所有隐藏态都挂在 html.motion 下：无 JS 或减少动态效果时内容照常显示。
    只动 transform / opacity / clip-path，避免触发重排。 */
 
-:root { --ease: cubic-bezier(.16, 1, .3, 1); }
+:root { --ease: cubic-bezier(.16, 1, .3, 1); --turn-r: clamp(18px, 2.6vw, 34px); }
 
 html.lenis, html.lenis body { height: auto; }
 .lenis.lenis-smooth { scroll-behavior: auto !important; }
@@ -18,6 +18,8 @@ html:not(.motion) .progress { display: none; }
 
 /* 顶栏随滚动方向隐藏 */
 html.motion .top { transition: background .3s, border-color .3s, transform .55s var(--ease); }
+/* 毛玻璃滚动时要逐帧重新模糊背后内容，动效模式下换成实色 */
+html.motion .top.is-stuck { -webkit-backdrop-filter: none; backdrop-filter: none; background: rgba(12, 13, 15, .95); }
 html.motion .top.is-hidden { transform: translate3d(0, -100%, 0); }
 
 /* 导航滑动指示条 */
@@ -28,9 +30,17 @@ html.motion .top.is-hidden { transform: translate3d(0, -100%, 0); }
   transition: transform .6s var(--ease), width .6s var(--ease), opacity .3s;
 }
 
-/* 首屏：固定在原地，后面的章节像幕布一样盖上来 */
-html.motion .hero { position: sticky; top: 0; z-index: 0; }
-html.motion .sec, html.motion .contact, html.motion .foot { position: relative; z-index: 1; }
+/* 翻页：每一屏滚到底时停住，下一屏带圆角盖上来，上一屏缩小变暗退到后面。
+   sticky 的 top 由 JS 按每页高度算出；这里只动 transform / opacity。 */
+html.motion .page { position: sticky; top: 0; }
+html.motion .page--last { position: relative; }
+html.motion.turn .page { will-change: transform, opacity; transform-origin: 50% calc(100% - 50vh); }
+html.motion .foot { position: relative; z-index: 2; }
+html.motion .page:not(.hero) > .sec:first-child,
+html.motion .sec.page, html.motion .contact.page {
+  border-radius: var(--turn-r) var(--turn-r) 0 0;
+  box-shadow: 0 -18px 60px rgba(0, 0, 0, .42), 0 -1px 0 rgba(237, 233, 225, .1);
+}
 html.motion .hero__in, html.motion .hero__canvas { will-change: transform, opacity; }
 
 html.motion h1 { visibility: hidden; }
@@ -145,8 +155,6 @@ html.motion .case__fig.is-in figcaption { opacity: 1; }
   html.motion .steps li.reveal.is-on { opacity: 1; }
 }
 
-/* 联系区：从圆角卡片展开成全屏 */
-html.motion .contact { will-change: clip-path; }
 
 @media (prefers-reduced-motion: reduce) {
   .btn, .btn::before, .nav__ind, .top, .phone { transition: none; }

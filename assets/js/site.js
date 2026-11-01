@@ -97,6 +97,16 @@
     });
   }
 
+  /* ---------- 翻页结构 ---------- */
+
+  var pages = [];
+  if (motion) {
+    pages = Array.prototype.slice.call($('main').children);
+    pages.forEach(function (pg) { pg.classList.add('page'); });
+    pages[pages.length - 1].classList.add('page--last');
+    if (fine) root.classList.add('turn');
+  }
+
   /* ---------- 进入动效 ---------- */
 
   var items = $$('.reveal');
@@ -175,25 +185,6 @@
     ind.style.setProperty('--w', a.offsetWidth + 'px');
   }
 
-  if ('IntersectionObserver' in window) {
-    var spy = new IntersectionObserver(function (entries) {
-      entries.forEach(function (entry) {
-        if (!entry.isIntersecting) return;
-        var here = null;
-        links.forEach(function (a) {
-          var on = a.getAttribute('href') === '#' + entry.target.id;
-          a.classList.toggle('is-here', on);
-          if (on) here = a;
-        });
-        moveInd(here);
-      });
-    }, { rootMargin: '-45% 0px -50% 0px' });
-    links.forEach(function (a) {
-      var sec = $(a.getAttribute('href'));
-      if (sec) spy.observe(sec);
-    });
-  }
-
   /* ---------- 平滑滚动 ---------- */
 
   var lenis = null;
@@ -201,23 +192,44 @@
     lenis = new window.Lenis({ autoRaf: false, lerp: 0.095, wheelMultiplier: 0.95 });
   }
 
+  function glide(y, duration) {
+    lenis.scrollTo(clamp(y, 0, m.max), {
+      duration: duration,
+      easing: function (t) { return t < 0.5 ? 8 * t * t * t * t : 1 - Math.pow(-2 * t + 2, 4) / 2; },
+      lock: false
+    });
+  }
+
   document.addEventListener('click', function (e) {
     var a = e.target.closest && e.target.closest('a[href^="#"]');
     if (!a || !lenis) return;
     var id = a.getAttribute('href').slice(1);
-    var target = id === 'top' ? 0 : document.getElementById(id);
-    if (target === null) return;
+    var target = id === 'top' ? null : document.getElementById(id);
+    if (id !== 'top' && !target) return;
     e.preventDefault();
-    lenis.scrollTo(target, {
-      offset: 0,
-      duration: 1.5,
-      easing: function (t) { return 1 - Math.pow(1 - t, 4); }
-    });
-    if (target && target.focus) {
+    glide(target ? layoutTop(target) : 0, 1.5);
+    if (target) {
       target.setAttribute('tabindex', '-1');
       target.focus({ preventScroll: true });
     }
     history.replaceState(null, '', '#' + id);
+  });
+
+  /* 键盘翻页也走同一条平滑曲线 */
+  document.addEventListener('keydown', function (e) {
+    if (!lenis || e.altKey || e.ctrlKey || e.metaKey) return;
+    var tag = e.target.tagName;
+    if (e.key === ' ' && (tag === 'BUTTON' || tag === 'A')) return;
+    var from = lenis.targetScroll;
+    var hop = m.vh * 0.88;
+    var to = null;
+    if (e.key === 'PageDown' || (e.key === ' ' && !e.shiftKey)) to = from + hop;
+    else if (e.key === 'PageUp' || (e.key === ' ' && e.shiftKey)) to = from - hop;
+    else if (e.key === 'Home') to = 0;
+    else if (e.key === 'End') to = m.max;
+    if (to === null) return;
+    e.preventDefault();
+    glide(to, 1.05);
   });
 
   /* ---------- 滚动联动 ---------- */
@@ -233,38 +245,61 @@
   var nodes = $$('.nodes g');
   var r2 = $('.r2');
   var label = $('.c2');
-  var contact = $('#contact');
   var parallax = $$('.duo .mask img');
   var LABELS = ['AI 设计方案', '打分、留痕', '校准世界', '给自己造工具', '下一圈'];
 
-  var m = { vh: 1, vw: 1, max: 1, loop: 0, pin: 0, pinLen: 1, contact: 0, contactLen: 1, par: [] };
+  var m = { vh: 1, vw: 1, max: 1, loop: 0, pin: 0, pinLen: 1, par: [], tops: [], ids: [] };
   var lastY = -1;
   var lastStep = -1;
   var lastDir = 0;
   var dirY = 0;
   var dirty = true;
+  var lastHere = null;
 
-  function pageTop(el) {
-    return el.getBoundingClientRect().top + window.scrollY;
+  /* 布局位置：页面停住时 getBoundingClientRect 不可信，这里沿 offsetParent 累加。
+     offsetTop 不受 transform 影响，也不受页面当前是否停住影响。 */
+  function layoutTop(el) {
+    var t = 0, n = el;
+    while (n && !n.classList.contains('page')) {
+      t += n.offsetTop;
+      n = n.offsetParent;
+    }
+    return t + (n ? n.__top : 0);
   }
 
   function measure() {
     m.vh = window.innerHeight;
     m.vw = window.innerWidth;
     m.max = Math.max(1, document.documentElement.scrollHeight - m.vh);
-    if (loop4) m.loop = pageTop(loop4);
+
+    var sum = 0;
+    pages.forEach(function (pg) {
+      var h = pg.offsetHeight;
+      pg.__top = sum;
+      pg.__h = h;
+      pg.style.top = Math.min(0, m.vh - h) + 'px';
+      sum += h;
+    });
+    pages.forEach(function (pg, i) {
+      var next = pages[i + 1];
+      if (!next) return;
+      pg.__start = next.__top - m.vh;
+      pg.__len = Math.max(1, Math.min(m.vh, m.max - pg.__start));
+      pg.__cover = next.__top;
+    });
+
+    if (loop4) m.loop = layoutTop(loop4);
     if (pin) {
-      m.pin = pageTop(pin);
+      m.pin = layoutTop(pin);
       m.pinLen = Math.max(1, pin.offsetHeight - m.vh);
     }
-    if (contact) {
-      m.contact = pageTop(contact);
-      /* 高屏上页面到底时也要能完全展开 */
-      m.contactLen = Math.max(1, Math.min(m.vh * 0.72, contact.offsetHeight * 0.8));
-    }
+    m.ids = links.map(function (a) {
+      var sec = $(a.getAttribute('href'));
+      return sec ? { a: a, top: layoutTop(sec) } : null;
+    }).filter(Boolean).sort(function (x, y) { return x.top - y.top; });
     m.par = parallax.map(function (img) {
-      var box = img.parentNode.getBoundingClientRect();
-      return { img: img, top: box.top + window.scrollY, h: box.height };
+      var box = img.parentNode;
+      return { img: img, top: layoutTop(box), h: box.offsetHeight };
     });
     dirty = true;
   }
@@ -288,16 +323,40 @@
     }
     top.classList.toggle('is-stuck', y > 40);
 
-    /* 首屏：内容上移淡出，叶片缓慢放大 */
+    /* 首屏：内容比幕布走得慢一点 */
     var h = clamp(y / m.vh);
     if (h < 1) {
-      heroIn.style.transform = 'translate3d(0,' + (-h * 90).toFixed(1) + 'px,0)';
-      heroIn.style.opacity = clamp(1 - h * 1.5).toFixed(3);
-      canvas.style.transform = 'scale(' + (1 + h * 0.07).toFixed(4) + ')';
-      canvas.style.opacity = (1 - h * 0.55).toFixed(3);
-      hero.style.visibility = '';
-    } else {
-      hero.style.visibility = 'hidden';
+      heroIn.style.transform = 'translate3d(0,' + (h * m.vh * 0.22).toFixed(1) + 'px,0)';
+      heroIn.style.opacity = clamp(1 - h * 1.35).toFixed(3);
+    }
+
+    /* 翻页：上一屏缩小变暗，被完全盖住后不再绘制 */
+    pages.forEach(function (pg, i) {
+      if (i === pages.length - 1) return;
+      var k = clamp((y - pg.__start) / pg.__len);
+      var covered = y >= pg.__cover;
+      var key = covered ? 2 : (k <= 0 ? 0 : 1);
+      if (key === 1) {
+        var e = ease(k);
+        if (fine) pg.style.transform = 'scale(' + (1 - e * 0.055).toFixed(4) + ')';
+        pg.style.opacity = (1 - e * 0.62).toFixed(3);
+      }
+      if (key === pg.__state) return;
+      pg.__state = key;
+      pg.style.visibility = key === 2 ? 'hidden' : '';
+      if (key === 0) {
+        pg.style.transform = '';
+        pg.style.opacity = '';
+      }
+    });
+
+    /* 导航高亮：取当前视口中线所在的章节 */
+    var here = null;
+    m.ids.forEach(function (it) { if (it.top <= y + m.vh * 0.5) here = it.a; });
+    if (here !== lastHere) {
+      lastHere = here;
+      links.forEach(function (a) { a.classList.toggle('is-here', a === here); });
+      moveInd(here);
     }
 
     /* 想 做 验 改 */
@@ -329,17 +388,6 @@
         nodes.forEach(function (g, i) { g.classList.toggle('is-on', i <= step); });
         label.textContent = LABELS[step];
       }
-    }
-
-    /* 联系区展开 */
-    if (contact) {
-      var cp = clamp((y + m.vh - m.contact) / m.contactLen);
-      var k = 1 - ease(cp);
-      /* 窄屏留白小，边距收得比留白更窄，避免裁到文字 */
-      var side = k * (m.vw < 820 ? 3 : 7);
-      contact.style.clipPath = k < 0.002
-        ? 'none'
-        : 'inset(0 ' + side.toFixed(2) + '% 0 ' + side.toFixed(2) + '% round ' + (k * 40).toFixed(1) + 'px ' + (k * 40).toFixed(1) + 'px 0 0)';
     }
 
     lastY = y;
@@ -625,7 +673,10 @@
   /* ---------- 主循环：滚动和画布共用一个 rAF ---------- */
 
   var timer;
+  var lastW = window.innerWidth;
   window.addEventListener('resize', function () {
+    if (!fine && window.innerWidth === lastW) return;
+    lastW = window.innerWidth;
     clearTimeout(timer);
     timer = setTimeout(function () {
       if (ctx) {
@@ -656,6 +707,14 @@
     window.addEventListener('scroll', onScroll, { passive: true });
     onScroll();
   }
+
+  /* 空闲时提前取图，避免翻到时才解码造成顿挫 */
+  window.addEventListener('load', function () {
+    var idle = window.requestIdleCallback || function (f) { return setTimeout(f, 300); };
+    idle(function () {
+      $$('img[loading="lazy"]').forEach(function (img) { img.loading = 'eager'; });
+    });
+  });
 
   /* 字体就绪再开场，避免标题先跳一下 */
   var fontsReady = document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve();
