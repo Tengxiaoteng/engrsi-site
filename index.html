@@ -18,7 +18,9 @@
 <link rel="stylesheet" href="assets/css/motion.css">
 <link rel="stylesheet" href="assets/css/rich.css">
 <link rel="stylesheet" href="assets/css/v2.css">
-<script>(function(d,w){var h=d.documentElement;h.classList.add('js');if(!w.matchMedia('(prefers-reduced-motion: reduce)').matches)h.classList.add('motion');w.setTimeout(function(){if(!w.__site)h.classList.remove('js','motion')},3000)})(document,window)</script>
+<script>(function(d,w){var h=d.documentElement;h.classList.add('js');if(!w.matchMedia('(prefers-reduced-motion: reduce)').matches)h.classList.add('motion');w.setTimeout(function(){if(!w.__site)h.classList.remove('js','motion')},6000)})(document,window)</script>
+<link rel="preload" href="assets/js/site.js" as="script" fetchpriority="high">
+<script>/* 会用到三维时尽早取脚本（条件同 site.js），手机上不排在图片后面 */(function(d,w){try{var c=w.navigator.connection;if(!d.documentElement.classList.contains('motion')||(c&&c.saveData)||!d.createElement('canvas').getContext('webgl2'))return;var l=d.createElement('link');l.rel='preload';l.as='script';l.href='assets/js/stage.min.js';l.setAttribute('fetchpriority','high');d.head.appendChild(l)}catch(e){}})(document,window)</script>
 <script src="assets/js/i18n.js"></script>
 </head>
 <body>

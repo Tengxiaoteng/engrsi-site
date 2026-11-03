@@ -105,11 +105,11 @@
 
   /* ---------- 三维展示：十二个领域的可拆装模型 ---------- */
 
-  /* 只在有动效、有 WebGL、屏幕够宽时启用；否则保留线条图标动画 */
+  /* 只在有动效、有 WebGL2、不省流量时启用（手机也启用）；否则保留线条图标动画 */
   var areas3d = null;
   (function () {
     var save = navigator.connection && navigator.connection.saveData;
-    if (!motion || save || !window.matchMedia('(min-width: 900px)').matches) return;
+    if (!motion || save) return;
     var gl = null;
     try { gl = document.createElement('canvas').getContext('webgl2'); } catch (e) { gl = null; }
     if (!gl) return;
@@ -119,7 +119,7 @@
   })();
 
   /* 背景三维分析层：条件同上（桌面、有动效、有 WebGL2、不省流量）。先挂好空层并切到毛玻璃样式，脚本到了再开始画 */
-  var bdHost = null;
+  var bdHost = null, bdLoad = null, bdWait = 0;
   if (areas3d) {
     bdHost = document.createElement('div');
     bdHost.className = 'bd';
@@ -127,11 +127,29 @@
     bdHost.innerHTML = '<canvas class="bd__gl"></canvas><canvas class="bd__hud"></canvas>';
     document.body.insertBefore(bdHost, document.body.firstChild);
     root.classList.add('glass');
+    /* 三维脚本约 220KB，手机上要等一会儿：首屏先放加载提示；等太久就退回 2D */
+    var en = (root.lang || '').toLowerCase().indexOf('en') === 0;
+    bdLoad = document.createElement('div');
+    bdLoad.className = 'bd-load';
+    bdLoad.setAttribute('aria-hidden', 'true');
+    bdLoad.innerHTML = '<i></i><span>' + (en ? 'LOADING 3D MODELS' : '正在加载三维模型') + '</span>';
+    $('.hero').appendChild(bdLoad);
+    bdWait = setTimeout(function () { if (bdHost && !bdHost.classList.contains('is-on')) dropBackdrop(); }, fine ? 15000 : 30000);
+  }
+  function loaded() {
+    clearTimeout(bdWait);
+    if (!bdLoad) return;
+    var el = bdLoad;
+    bdLoad = null;
+    el.classList.add('is-done');
+    setTimeout(function () { el.remove(); }, 700);
   }
   /* 首页叶片在背景层里画；脚本没到或失败就退回 2D 首屏 */
   function dropBackdrop() {
+    loaded();
     if (!bdHost) return;
     root.classList.remove('glass');
+    if (secMode) { canvas.classList.remove('bd__sec'); hero.insertBefore(canvas, hero.firstChild); secMode = false; }
     bdHost.remove();
     bdHost = null;
     /* 2D 首屏之前是隐藏的，尺寸要重新量 */
@@ -148,7 +166,19 @@
     s.onload = function () {
       var idle = window.requestIdleCallback || function (f) { return setTimeout(f, 60); };
       /* 背景（含首页叶片）先起，十二格空闲时再建 */
-      if (bdHost) { try { window.EngStage.backdrop(bdHost); } catch (e) { dropBackdrop(); } }
+      if (bdHost) {
+        try {
+          window.EngStage.backdrop(bdHost);
+          loaded();
+          /* 原来首屏的细线收敛搬到商务合作页的背景：画布挪进背景层，翻到那页才画 */
+          if (ctx) {
+            bdHost.insertBefore(canvas, bdHost.querySelector('.bd__hud'));
+            canvas.classList.add('bd__sec');
+            secMode = true;
+            resize();
+          }
+        } catch (e) { dropBackdrop(); }
+      }
       idle(function () {
         try { window.EngStage.fields(areas3d); } catch (e) { areas3d.classList.remove('is-3d'); }
       });
@@ -677,6 +707,8 @@
   ];
 
   var W = 0, H = 0, dpr = 1, scale = 1, ox = 0, oy = 0, read = [0, 0];
+  /* secMode：画布在背景层里，作商务合作页的背景，截面放大居中、线条加亮 */
+  var secMode = false, secOn = false;
   var pop = [], flow = [], film = [], clock = 0, lastT = 0;
   var cache = null;
   var mx = 0, my = 0, px = 0, py = 0;
@@ -910,6 +942,25 @@
     dpr = Math.min(window.devicePixelRatio || 1, W > 1700 ? 1.5 : 2);
     canvas.width = Math.round(W * dpr);
     canvas.height = Math.round(H * dpr);
+    if (secMode && W < 820) {
+      /* 手机：放在页头上方空着的那块，居中 */
+      scale = Math.min(W * 0.62, H * 0.27);
+      ox = W * 0.5 - scale * 0.5;
+      oy = H * 0.23 - 0.25 * scale;
+      read = [W - 16, 0];
+      buildCache();
+      return;
+    }
+    if (secMode) {
+      /* 截面居中放大：弦向 0..1，高度方向约 -0.8..0.3 */
+      /* 右上那块空着的位置（左边是标题和联系方式，下面是横向流程） */
+      scale = Math.min(W * 0.27, H * (H > 800 ? 0.42 : 0.37));
+      ox = W * 0.76 - scale * 0.5;
+      oy = H * (H > 800 ? 0.34 : 0.335) - 0.25 * scale;
+      read = [ox + scale, oy - 0.36 * scale];
+      buildCache();
+      return;
+    }
     if (W >= 820) {
       /* 放在右上，避开左下的大标题 */
       scale = Math.min(W * 0.34, H * 0.56);
@@ -1047,6 +1098,9 @@
     if (dt) drawFlow(dt, 0.4 + 0.6 * ease(seg(p, 0.7, 0.82)) * fadeOut);
 
     ctx.lineWidth = 1;
+    /* 背景版：候选线叠加发亮 */
+    var boost = secMode ? 1.7 : 1;
+    if (secMode) ctx.globalCompositeOperation = 'lighter';
     for (i = 0; i < pop.length; i++) {
       n = pop[i];
       life = 1 - seg(p, n.die, n.die + 0.03);
@@ -1060,9 +1114,10 @@
       trace(ctx, g);
       ctx.strokeStyle = flash > 0.02
         ? 'rgba(232,105,43,' + (0.8 * flash * alpha).toFixed(3) + ')'
-        : 'rgba(237,233,225,' + (0.17 * life * alpha).toFixed(3) + ')';
+        : 'rgba(237,233,225,' + (0.17 * life * alpha * boost).toFixed(3) + ')';
       ctx.stroke();
     }
+    ctx.globalCompositeOperation = 'source-over';
 
     ctx.globalAlpha = fade;
     drawBuild(p);
@@ -1111,6 +1166,8 @@
     resize();
     /* 回归测试用：直接画某一时刻 */
     canvas.__hero = function (p, n) { for (var i = 0; i < (n || 1); i++) { clock = p * CYCLE; frame(p, 16); } };
+    /* 背景版测试：跳到某一时刻并保持播放 */
+    canvas.__sec = function (sec) { secOn = true; clock = sec * 1000; };
     if (!motion) {
       frame(0.8, 0);
     } else if (fine) {
@@ -1222,7 +1279,11 @@
     update(y);
     if (lenis && fine) snap(now);
     if (ctx && !bdHost && y < m.vh && !document.hidden) drawHero(now);
-    else lastT = 0;
+    else if (secMode && !document.hidden && bdHost.classList.contains('is-sec')) {
+      /* 每次翻到商务合作页都从头收敛 */
+      if (!secOn) { secOn = true; clock = 0; seed(); lastT = 0; }
+      drawHero(now);
+    } else { lastT = 0; if (secOn && secMode && !bdHost.classList.contains('is-sec')) secOn = false; }
     requestAnimationFrame(tick);
   }
 
