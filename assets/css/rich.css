@@ -143,13 +143,13 @@ html.motion .app.is-live .app__steps li:nth-child(4) { animation-name: tick4; }
 
 /* 08 积累 */
 /* :where 不加优先级：这里不能盖过 motion.css 给翻页页设的 sticky */
-:where(#record, .contact) { position: relative; overflow: clip; }
-#record .wrap, .contact .wrap { position: relative; z-index: 1; }
-#record::after, .contact::after {
+:where(#about, .contact) { position: relative; overflow: clip; }
+#about .wrap, .contact .wrap { position: relative; z-index: 1; }
+#about::after, .contact::after {
   content: ""; position: absolute; pointer-events: none; aspect-ratio: 1; background: rgba(237, 233, 225, .2);
   -webkit-mask: url("../img/lines.svg") center / contain no-repeat; mask: url("../img/lines.svg") center / contain no-repeat;
 }
-#record::after { width: min(70vw, 900px); right: -8vw; top: -8vw; background: rgba(232, 105, 43, .22); }
+#about::after { width: min(70vw, 900px); right: -8vw; top: -8vw; background: rgba(232, 105, 43, .22); }
 .contact::after { width: min(84vw, 1000px); right: -6vw; top: -5vw; background: rgba(232, 105, 43, .22); }
 
 .domains { margin-top: 30px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--line-ink); box-shadow: 0 0 0 1px var(--line-ink); }

@@ -103,47 +103,29 @@
     });
   }
 
-  /* ---------- 三维展示 ---------- */
+  /* ---------- 三维展示：十二个领域的可拆装模型 ---------- */
 
-  var views = $$('[data-stage]'), showcase = null;
+  /* 只在有动效、有 WebGL、屏幕够宽时启用；否则保留线条图标动画 */
+  var areas3d = null;
   (function () {
     var save = navigator.connection && navigator.connection.saveData;
+    if (!motion || save || !window.matchMedia('(min-width: 900px)').matches) return;
     var gl = null;
-    try { gl = !save && document.createElement('canvas').getContext('webgl2'); } catch (e) { gl = null; }
-    if (!gl) { views = []; return; }
-    /* 典型产品的实时三维只在有动效时启用，否则保留静态图 */
-    if (motion) showcase = $('.show__stage');
+    try { gl = document.createElement('canvas').getContext('webgl2'); } catch (e) { gl = null; }
+    if (!gl) return;
     var lose = gl.getExtension('WEBGL_lose_context');
     if (lose) lose.loseContext();
-    /* 在量页面高度之前放出来，否则翻页位置要多算一次 */
-    views.forEach(function (v) { v.hidden = false; });
+    areas3d = $('.areas__grid');
   })();
 
   function mountViews() {
-    function fail() {
-      views.forEach(function (v) { v.hidden = true; });
-      if (motion) measure();
-    }
     var s = document.createElement('script');
     s.src = 'assets/js/stage.min.js';
     s.async = true;
-    s.onerror = fail;
     s.onload = function () {
       var idle = window.requestIdleCallback || function (f) { return setTimeout(f, 60); };
-      if (showcase) idle(function () {
-        try { window.EngStage.products(showcase, $$('.show__tab')); } catch (e) { showcase.classList.remove('is-3d'); }
-      });
-      views.forEach(function (v, i) {
-        idle(function () {
-          try {
-            if (v.dataset.stage === 'blade') window.EngStage.blade(v);
-            else if (v.dataset.stage === 'world') window.EngStage.world(v, $$('.stairs li'));
-            else window.EngStage.show(v, $$('.fields li'));
-          } catch (e) {
-            v.hidden = true;
-            if (motion) measure();
-          }
-        });
+      idle(function () {
+        try { window.EngStage.fields(areas3d); } catch (e) { areas3d.classList.remove('is-3d'); }
       });
     };
     document.head.appendChild(s);
@@ -630,151 +612,186 @@
 
   var ctx = canvas && canvas.getContext('2d');
 
-  var COUNT = 130;
-  var SAMPLES = 34;
-  var CYCLE = 17000;
-  var FLOW = 120;
-  var TARGET = [0.38, 0.12, 0.84, -0.22, -0.84, 0.095];
-  var HOLES = [0.035, 0.1, 0.19, 0.3, 0.42, 0.53, 0.63, 0.72, 0.8, 0.87, 0.93];
-  var HEAT = [
-    [0, '#fde7a9'], [0.14, '#f9a93a'], [0.3, '#ea6a32'], [0.52, '#c13b5b'],
-    [0.74, '#ed7a2c'], [0.9, '#fbb643'], [1, '#fff1c4']
-  ];
+  /* 生成式设计示意：一整块设计域划成单元，按“受力贡献”打分，低分单元一批批被淘汰，
+     最后剩下沿受力路径的轻量化悬臂支架，再沿路径走光流。坐标以设计域宽为 1，y 向下。 */
+  var CYCLE = 16000;
+  var FLOW = 150;
+  var DH = 0.62;
+  var SUP = [[0.05, 0.1], [0.05, 0.52]], LOAD = [0.95, 0.31];
 
-  var W = 0, H = 0, dpr = 1, scale = 1, ox = 0, oy = 0;
-  var pop = [], flow = [], clock = 0, lastT = 0;
+  function cub(p, t) {
+    var u = 1 - t;
+    return [
+      u * u * u * p[0] + 3 * u * u * t * p[2] + 3 * u * t * t * p[4] + t * t * t * p[6],
+      u * u * u * p[1] + 3 * u * u * t * p[3] + 3 * u * t * t * p[5] + t * t * t * p[7]
+    ];
+  }
+  var TOP = [0.05, 0.1, 0.36, 0.13, 0.7, 0.2, 0.95, 0.31];
+  var BOT = [0.05, 0.52, 0.36, 0.5, 0.7, 0.42, 0.95, 0.31];
+  function line(a, b) { return [a[0], a[1], a[0] + (b[0] - a[0]) / 3, a[1] + (b[1] - a[1]) / 3, a[0] + (b[0] - a[0]) * 2 / 3, a[1] + (b[1] - a[1]) * 2 / 3, b[0], b[1]]; }
+  /* 杆件：三次曲线控制点 + 两端半径；光流从受载端流向固定端 */
+  var MEMBERS = [
+    { c: TOP, r: [0.036, 0.02] },
+    { c: BOT, r: [0.04, 0.02] },
+    { c: line(SUP[0], SUP[1]), r: [0.02, 0.02] },
+    { c: line(SUP[0], cub(BOT, 0.24)), r: [0.017, 0.012] },
+    { c: line(SUP[1], cub(TOP, 0.26)), r: [0.017, 0.012] },
+    { c: line(cub(TOP, 0.26), cub(BOT, 0.46)), r: [0.012, 0.012] },
+    { c: line(cub(BOT, 0.24), cub(TOP, 0.5)), r: [0.012, 0.011] },
+    { c: line(cub(TOP, 0.5), cub(BOT, 0.68)), r: [0.011, 0.01] },
+    { c: line(cub(BOT, 0.46), cub(TOP, 0.72)), r: [0.011, 0.01] },
+    { c: line(cub(TOP, 0.72), cub(BOT, 0.86)), r: [0.01, 0.009] },
+    { c: line(cub(BOT, 0.68), cub(TOP, 0.88)), r: [0.01, 0.009] }
+  ];
+  var BOSS = [{ p: SUP[0], r: 0.052, h: 0.024 }, { p: SUP[1], r: 0.052, h: 0.024 }, { p: LOAD, r: 0.046, h: 0.021 }];
+  MEMBERS.forEach(function (m) {
+    m.pts = [];
+    for (var i = 0; i <= 24; i++) m.pts.push(cub(m.c, i / 24));
+  });
+
+  var W = 0, H = 0, dpr = 1, scale = 1, ox = 0, oy = 0, cell = 7;
+  var cells = [], flow = [], clock = 0, lastT = 0, total = 1, kept = 1;
   var cache = null;
   var mx = 0, my = 0, px = 0, py = 0;
 
   function rand(a, b) { return a + Math.random() * (b - a); }
+  function X(v) { return ox + v * scale; }
+  function Y(v) { return oy + v * scale; }
+
+  function distSeg(x, y, a, b) {
+    var dx = b[0] - a[0], dy = b[1] - a[1], l = dx * dx + dy * dy;
+    var t = l ? clamp(((x - a[0]) * dx + (y - a[1]) * dy) / l) : 0;
+    return [Math.hypot(x - a[0] - dx * t, y - a[1] - dy * t), t];
+  }
+  /* 某点在最终结构里的“密度”：0 空，1 实 */
+  function density(x, y) {
+    var d = 0, i, j, m, s, r, hole = false;
+    for (i = 0; i < BOSS.length; i++) {
+      var q = Math.hypot(x - BOSS[i].p[0], y - BOSS[i].p[1]);
+      if (q < BOSS[i].h) hole = true;
+      if (q < BOSS[i].r) d = 1;
+    }
+    if (hole) return 0;
+    for (i = 0; i < MEMBERS.length && d < 1; i++) {
+      m = MEMBERS[i];
+      for (j = 0; j < m.pts.length - 1; j++) {
+        s = distSeg(x, y, m.pts[j], m.pts[j + 1]);
+        r = m.r[0] + (m.r[1] - m.r[0]) * (j + s[1]) / (m.pts.length - 1);
+        d = Math.max(d, clamp((r + 0.006 - s[0]) / 0.012));
+      }
+    }
+    return d;
+  }
 
   function seed() {
-    pop = [];
-    for (var i = 0; i < COUNT; i++) {
-      pop.push({
-        g: [
-          TARGET[0] + rand(-0.2, 0.26), TARGET[1] + rand(-0.26, 0.3),
-          TARGET[2] + rand(-0.28, 0.2), TARGET[3] + rand(-0.34, 0.36),
-          TARGET[4] + rand(-0.26, 0.42), TARGET[5] + rand(-0.05, 0.08)
-        ],
-        rate: rand(0.7, 1.15),
-        die: i < 10 ? 2 : rand(0.1, 0.56)
-      });
+    cells = [];
+    var cols = Math.round(scale / cell), rows = Math.round(DH * scale / cell), i, j, u = 1 / cols;
+    kept = 0;
+    for (j = 0; j < rows; j++) for (i = 0; i < cols; i++) {
+      var x = (i + 0.5) * u, y = (j + 0.5) * u, d = density(x, y);
+      /* 打分：越靠近受力路径分越高；实体单元永不淘汰 */
+      var key = d > 0.5 ? 2 : d * 0.55 + Math.random() * 0.45;
+      cells.push({ x: i * u, y: j * u, d: d, key: key });
+      if (d > 0.5) kept++;
     }
+    total = cells.length;
+    kept /= total;
   }
 
   function spawn(p, anywhere) {
-    var side = Math.random() < 0.5 ? -1 : 1;
-    p.s = anywhere ? rand(-0.32, 1.28) : rand(-0.42, -0.28);
-    p.d = side * (0.075 + Math.pow(Math.random(), 1.5) * 0.52);
-    p.v = rand(0.00011, 0.00022);
-    p.a = rand(0.16, 0.5);
-    p.len = rand(0.018, 0.05);
+    p.m = MEMBERS[Math.floor(Math.random() * MEMBERS.length)];
+    p.s = anywhere ? Math.random() : 1;
+    p.v = rand(0.00012, 0.00026);
+    p.o = rand(-0.7, 0.7);
+    p.a = rand(0.25, 0.75);
+    p.len = rand(0.04, 0.1);
     p.life = 0;
   }
-
   function seedFlow() {
     flow = [];
-    for (var i = 0; i < FLOW; i++) {
-      var p = {};
-      spawn(p, true);
-      flow.push(p);
-    }
+    for (var i = 0; i < FLOW; i++) { var p = {}; spawn(p, true); flow.push(p); }
+  }
+  function along(m, s) {
+    var k = clamp(s) * (m.pts.length - 1), j = Math.min(m.pts.length - 2, Math.floor(k)), f = k - j;
+    var a = m.pts[j], b = m.pts[j + 1], dx = b[0] - a[0], dy = b[1] - a[1], l = Math.hypot(dx, dy) || 1;
+    var r = m.r[0] + (m.r[1] - m.r[0]) * clamp(s);
+    return { x: a[0] + dx * f, y: a[1] + dy * f, nx: -dy / l, ny: dx / l, r: r };
   }
 
-  function bez(p0, p1, p2, p3, t) {
-    var u = 1 - t;
-    return u * u * u * p0 + 3 * u * u * t * p1 + 3 * u * t * t * p2 + t * t * t * p3;
-  }
-  function dbez(p0, p1, p2, p3, t) {
-    var u = 1 - t;
-    return 3 * u * u * (p1 - p0) + 6 * u * t * (p2 - p1) + 3 * t * t * (p3 - p2);
-  }
-  function centre(g, s) {
-    var x = bez(0, g[0], g[2], 1, s), y = bez(0, g[1], g[3], g[4], s);
-    var dx = dbez(0, g[0], g[2], 1, s), dy = dbez(0, g[1], g[3], g[4], s);
-    var len = Math.hypot(dx, dy) || 1;
-    return { x: x, y: y, nx: -dy / len, ny: dx / len };
-  }
-  function thick(g, s) {
-    return g[5] * 1.72 * Math.pow(s, 0.46) * Math.pow(1 - s, 0.9) + 0.0035;
-  }
-  function X(v) { return ox + v * scale; }
-  function Y(v) { return oy - v * scale; }
-
-  function trace(c, g) {
-    var i, s, p, t, up = [], lo = [];
-    for (i = 0; i <= SAMPLES; i++) {
-      s = i / SAMPLES;
-      s = s * s * (1.6 - 0.6 * s);
-      p = centre(g, s);
-      t = thick(g, s);
-      up.push(X(p.x + p.nx * t), Y(p.y + p.ny * t));
-      lo.push(X(p.x - p.nx * t), Y(p.y - p.ny * t));
-    }
-    c.beginPath();
-    c.moveTo(up[0], up[1]);
-    for (i = 2; i < up.length; i += 2) c.lineTo(up[i], up[i + 1]);
-    for (i = lo.length - 2; i >= 0; i -= 2) c.lineTo(lo[i], lo[i + 1]);
-    c.closePath();
-  }
-
-  /* 成品叶片只画一次，之后贴图，避免每帧重算大范围光晕 */
+  /* 收敛后的光滑结构只画一次 */
   function buildCache() {
     var off = document.createElement('canvas');
     off.width = Math.max(1, Math.round(W * dpr));
     off.height = Math.max(1, Math.round(H * dpr));
     var c = off.getContext('2d');
     c.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-    var a = centre(TARGET, 0), b = centre(TARGET, 1), i;
-    var heat = c.createLinearGradient(X(a.x), Y(a.y), X(b.x), Y(b.y));
-    HEAT.forEach(function (stop) { heat.addColorStop(stop[0], stop[1]); });
-
-    c.save();
-    c.shadowColor = 'rgba(232,105,43,.5)';
-    c.shadowBlur = scale * 0.13 * dpr;
-    trace(c, TARGET);
-    c.fillStyle = heat;
-    c.fill();
-    c.shadowBlur = 0;
-    c.clip();
-    for (i = 0; i < HOLES.length; i++) {
-      var s = HOLES[i], p = centre(TARGET, s), t = thick(TARGET, s);
-      var off2 = (i % 2 ? 0.34 : -0.34) * t;
-      var hx = X(p.x + p.nx * off2), hy = Y(p.y + p.ny * off2);
-      var r = Math.max(scale * 0.0085, scale * t * 0.2);
-      var cool = c.createRadialGradient(hx, hy, 0, hx, hy, r * 8);
-      cool.addColorStop(0, 'rgba(37,12,74,.96)');
-      cool.addColorStop(0.32, 'rgba(92,20,108,.72)');
-      cool.addColorStop(1, 'rgba(120,30,100,0)');
-      c.fillStyle = cool;
-      c.fillRect(hx - r * 8, hy - r * 8, r * 16, r * 16);
-      c.fillStyle = '#0a0612';
-      c.beginPath();
-      c.arc(hx, hy, r, 0, Math.PI * 2);
-      c.fill();
+    function shape(ctx2) {
+      ctx2.lineCap = 'round';
+      ctx2.lineJoin = 'round';
+      MEMBERS.forEach(function (m) {
+        for (var j = 0; j < m.pts.length - 1; j++) {
+          var r = m.r[0] + (m.r[1] - m.r[0]) * (j + 0.5) / (m.pts.length - 1);
+          ctx2.lineWidth = r * 2 * scale;
+          ctx2.beginPath();
+          ctx2.moveTo(X(m.pts[j][0]), Y(m.pts[j][1]));
+          ctx2.lineTo(X(m.pts[j + 1][0]), Y(m.pts[j + 1][1]));
+          ctx2.stroke();
+        }
+      });
+      BOSS.forEach(function (b) { ctx2.beginPath(); ctx2.arc(X(b.p[0]), Y(b.p[1]), b.r * scale, 0, Math.PI * 2); ctx2.fill(); });
     }
+    /* 底层橙色光晕 */
+    c.save();
+    c.shadowColor = 'rgba(232,105,43,.45)';
+    c.shadowBlur = scale * 0.05 * dpr;
+    c.strokeStyle = c.fillStyle = 'rgba(232,105,43,.35)';
+    shape(c);
     c.restore();
+    /* 金属质感：上亮下暗，受载端偏暖 */
+    var m2 = document.createElement('canvas');
+    m2.width = off.width; m2.height = off.height;
+    var k = m2.getContext('2d');
+    k.setTransform(dpr, 0, 0, dpr, 0, 0);
+    k.strokeStyle = k.fillStyle = '#fff';
+    shape(k);
+    k.globalCompositeOperation = 'source-in';
+    var g = k.createLinearGradient(X(0), Y(0), X(0.4), Y(DH));
+    g.addColorStop(0, '#cfcac1'); g.addColorStop(0.5, '#9a968f'); g.addColorStop(1, '#5d5a56');
+    k.fillStyle = g;
+    k.fillRect(0, 0, W, H);
+    var w = k.createRadialGradient(X(LOAD[0]), Y(LOAD[1]), 0, X(LOAD[0]), Y(LOAD[1]), scale * 0.45);
+    w.addColorStop(0, 'rgba(240,130,70,.75)'); w.addColorStop(1, 'rgba(240,130,70,0)');
+    k.globalCompositeOperation = 'source-atop';
+    k.fillStyle = w;
+    k.fillRect(0, 0, W, H);
+    k.globalCompositeOperation = 'destination-out';
+    BOSS.forEach(function (b) { k.beginPath(); k.arc(X(b.p[0]), Y(b.p[1]), b.h * scale, 0, Math.PI * 2); k.fill(); });
+    c.drawImage(m2, 0, 0, W, H);
+    /* 孔边一圈细高光 */
+    c.strokeStyle = 'rgba(255,255,255,.35)';
+    c.lineWidth = 1;
+    BOSS.forEach(function (b) { c.beginPath(); c.arc(X(b.p[0]), Y(b.p[1]), b.h * scale, 0, Math.PI * 2); c.stroke(); });
     cache = off;
   }
 
   function resize() {
-    dpr = Math.min(window.devicePixelRatio || 1, W > 1700 ? 1.5 : 2);
     W = canvas.clientWidth;
     H = canvas.clientHeight;
     dpr = Math.min(window.devicePixelRatio || 1, W > 1700 ? 1.5 : 2);
     canvas.width = Math.round(W * dpr);
     canvas.height = Math.round(H * dpr);
     if (W >= 820) {
-      scale = Math.min(W * 0.46, H * 0.74);
-      ox = W - scale * 1.2;
-      oy = H * 0.1 + scale * 0.1;
+      /* 放在右上，避开左下的大标题 */
+      scale = Math.min(W * 0.4, H * 0.66);
+      ox = W - scale - Math.max(40, W * 0.05);
+      oy = Math.max(H * 0.13, 86);
     } else {
-      scale = Math.min(W * 0.76, H * 0.46);
+      scale = Math.min(W * 0.84, H * 0.62);
       ox = (W - scale) / 2;
-      oy = H * 0.1 + scale * 0.16;
+      oy = Math.max(H * 0.1, 100);
     }
+    cell = Math.max(5, scale / 110);
+    seed();
     buildCache();
   }
 
@@ -788,26 +805,74 @@
     ctx.stroke();
   }
 
-  function drawFlow(dt, strength) {
-    var i, p, a, b, o;
+  /* 边界条件：左侧固定（斜线），右端载荷（箭头） */
+  function bounds(a) {
+    if (a <= 0.01) return;
+    ctx.strokeStyle = 'rgba(237,233,225,' + (0.35 * a).toFixed(3) + ')';
     ctx.lineWidth = 1;
-    ctx.lineCap = 'round';
-    for (i = 0; i < flow.length; i++) {
-      p = flow[i];
-      p.s += p.v * dt;
-      p.life += dt;
-      if (p.s > 1.34) { spawn(p, false); continue; }
-      a = centre(TARGET, p.s);
-      b = centre(TARGET, p.s - p.len);
-      o = clamp(p.life / 900) * seg(1.34 - p.s, 0, 0.16) * p.a * strength;
-      if (o < 0.01) continue;
-      var near = clamp(1 - Math.abs(p.d) / 0.22);
-      ctx.strokeStyle = near > 0.1
-        ? 'rgba(244,' + Math.round(190 - near * 70) + ',' + Math.round(150 - near * 90) + ',' + o.toFixed(3) + ')'
-        : 'rgba(237,233,225,' + (o * 0.62).toFixed(3) + ')';
+    var x0 = X(0) - 6, i;
+    ctx.beginPath();
+    ctx.moveTo(x0, Y(0.02)); ctx.lineTo(x0, Y(DH - 0.02));
+    for (i = 0; i <= 12; i++) { var y = Y(0.03 + i * (DH - 0.06) / 12); ctx.moveTo(x0, y); ctx.lineTo(x0 - 8, y + 8); }
+    ctx.stroke();
+    var lx = X(LOAD[0]), ly = Y(LOAD[1]) + 0.06 * scale;
+    ctx.strokeStyle = 'rgba(232,105,43,' + (0.9 * a).toFixed(3) + ')';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(lx, ly); ctx.lineTo(lx, ly + 0.12 * scale);
+    ctx.moveTo(lx - 5, ly + 7); ctx.lineTo(lx, ly); ctx.lineTo(lx + 5, ly + 7);
+    ctx.stroke();
+  }
+
+  var BUCKETS = 8;
+  function drawCells(p) {
+    var L = ease(seg(p, 0.08, 0.6));
+    var tint = seg(p, 0.1, 0.62);
+    var fade = 1 - seg(p, 0.62, 0.74);
+    var paths = [], flash = [], i, c, alive = 0, s = cell * 0.82;
+    for (i = 0; i <= BUCKETS; i++) paths.push([]);
+    for (i = 0; i < cells.length; i++) {
+      c = cells[i];
+      if (L > c.key) {
+        /* 刚被淘汰的单元闪一下：只闪靠近结构的，远处的直接消失，画面不乱 */
+        if (L - c.key < 0.014 && c.key > 0.3) flash.push(c);
+        continue;
+      }
+      alive++;
+      paths[Math.round(clamp(c.d * tint) * BUCKETS)].push(c);
+    }
+    for (i = 0; i <= BUCKETS; i++) {
+      if (!paths[i].length) continue;
+      var k = i / BUCKETS;
+      ctx.fillStyle = 'rgba(' + Math.round(150 + 90 * k) + ',' + Math.round(150 - 45 * k) + ',' + Math.round(150 - 105 * k) + ',' + ((0.13 + 0.62 * k) * fade).toFixed(3) + ')';
       ctx.beginPath();
-      ctx.moveTo(X(b.x + b.nx * p.d), Y(b.y + b.ny * p.d));
-      ctx.lineTo(X(a.x + a.nx * p.d), Y(a.y + a.ny * p.d));
+      paths[i].forEach(function (q) { ctx.rect(X(q.x), Y(q.y), s, s); });
+      ctx.fill();
+    }
+    if (flash.length) {
+      ctx.fillStyle = 'rgba(255,150,80,' + (0.6 * fade).toFixed(3) + ')';
+      ctx.beginPath();
+      flash.forEach(function (q) { ctx.rect(X(q.x), Y(q.y), s, s); });
+      ctx.fill();
+    }
+    return alive / total;
+  }
+
+  function drawFlow(dt, strength) {
+    ctx.lineWidth = 1.2;
+    ctx.lineCap = 'round';
+    for (var i = 0; i < flow.length; i++) {
+      var p = flow[i];
+      p.s -= p.v * dt;
+      p.life += dt;
+      if (p.s < -p.len) { spawn(p, false); continue; }
+      var a = along(p.m, p.s), b = along(p.m, p.s + p.len);
+      var o = clamp(p.life / 700) * clamp((p.s + p.len) / 0.08) * p.a * strength;
+      if (o < 0.01) continue;
+      ctx.strokeStyle = 'rgba(255,' + Math.round(170 + 60 * Math.abs(p.o)) + ',' + Math.round(110 + 90 * Math.abs(p.o)) + ',' + o.toFixed(3) + ')';
+      ctx.beginPath();
+      ctx.moveTo(X(b.x + b.nx * b.r * p.o), Y(b.y + b.ny * b.r * p.o));
+      ctx.lineTo(X(a.x + a.nx * a.r * p.o), Y(a.y + a.ny * a.r * p.o));
       ctx.stroke();
     }
   }
@@ -819,40 +884,40 @@
     ctx.translate(px, py);
 
     var fadeOut = 1 - seg(p, 0.95, 1);
-    var pull = ease(seg(p, 0, 0.64));
-    var fade = fadeOut * ease(seg(p, 0, 0.05));
-    var i, n, k, life, flash, j, g = [0, 0, 0, 0, 0, 0];
+    var fadeIn = ease(seg(p, 0, 0.05));
+    ctx.globalAlpha = fadeOut * fadeIn;
 
-    if (dt) drawFlow(dt, 0.45 + 0.55 * ease(seg(p, 0.5, 0.74)));
-
-    ctx.lineWidth = 1;
-    for (i = 0; i < pop.length; i++) {
-      n = pop[i];
-      life = 1 - seg(p, n.die, n.die + 0.03);
-      if (life <= 0) continue;
-      flash = seg(p, n.die - 0.03, n.die) * life;
-      k = Math.min(1, pull * n.rate);
-      for (j = 0; j < 6; j++) g[j] = n.g[j] + (TARGET[j] - n.g[j]) * k;
-      var alpha = (1 - seg(p, 0.66, 0.76)) * fade;
-      if (alpha <= 0.002) continue;
-      trace(ctx, g);
-      ctx.strokeStyle = flash > 0.02
-        ? 'rgba(232,105,43,' + (0.8 * flash * alpha).toFixed(3) + ')'
-        : 'rgba(237,233,225,' + (0.17 * life * alpha).toFixed(3) + ')';
-      ctx.stroke();
+    /* 设计域外框：开始时最清楚，结构成形后淡去 */
+    var box = 1 - seg(p, 0.5, 0.7);
+    if (box > 0.01) {
+      ctx.strokeStyle = 'rgba(237,233,225,' + (0.22 * box).toFixed(3) + ')';
+      ctx.setLineDash([4, 6]);
+      ctx.lineWidth = 1;
+      ctx.strokeRect(X(0) - 0.5, Y(0) - 0.5, scale, DH * scale);
+      ctx.setLineDash([]);
     }
+    bounds(1);
 
-    var show = ease(seg(p, 0.6, 0.74)) * fadeOut;
+    var mass = 1;
+    if (p < 0.74) mass = drawCells(p);
+    else mass = kept;
+
+    var show = ease(seg(p, 0.6, 0.74));
     if (show > 0 && cache) {
-      ctx.globalAlpha = show;
-      ctx.drawImage(cache, 0, 0, W, H);
-      /* 热呼吸 */
-      ctx.globalCompositeOperation = 'lighter';
-      ctx.globalAlpha = show * (0.1 + 0.09 * Math.sin(clock / 1100));
-      ctx.drawImage(cache, 0, 0, W, H);
-      ctx.globalCompositeOperation = 'source-over';
-      ctx.globalAlpha = 1;
+      ctx.save();
+      ctx.setTransform(1, 0, 0, 1, px * dpr, py * dpr);
+      ctx.globalAlpha = show * fadeOut;
+      ctx.drawImage(cache, 0, 0);
+      ctx.restore();
     }
+    if (dt) drawFlow(dt, ease(seg(p, 0.7, 0.8)) * fadeOut);
+
+    /* 迭代读数：与语言无关，只用数字 */
+    var it = Math.round(ease(seg(p, 0.08, 0.6)) * 64);
+    ctx.font = '11px ' + getComputedStyle(document.documentElement).getPropertyValue('--mono');
+    ctx.fillStyle = 'rgba(237,233,225,.5)';
+    ctx.fillText('ITER ' + ('00' + it).slice(-3) + '   MASS ' + Math.round(mass * 100) + '%', X(0), Y(0) - 12);
+    ctx.globalAlpha = 1;
   }
 
   function drawHero(now) {
@@ -867,7 +932,6 @@
   }
 
   if (ctx) {
-    seed();
     seedFlow();
     resize();
     if (!motion) {
@@ -888,48 +952,6 @@
     }, { rootMargin: '10% 0px 10% 0px' });
     $$('[data-live]').forEach(function (el) { live.observe(el); });
   }
-
-  /* ---------- 典型产品轮播：看得见时自动换，点选后停在所选 ---------- */
-
-  (function () {
-    var stage = $('.show__stage');
-    if (!stage) return;
-    var imgs = $$('.show__img', stage), tabs = $$('.show__tab');
-    var at = 0, timer = null, held = false;
-    /* 三维版每款要合拢、拆开、摆动，停得久一些 */
-    function dwell() { return stage.classList.contains('is-3d') ? 11000 : 6000; }
-    function go(i, timed) {
-      at = (i + imgs.length) % imgs.length;
-      imgs.forEach(function (im, k) { im.classList.toggle('is-on', k === at); });
-      tabs.forEach(function (t, k) {
-        t.classList.toggle('is-on', k === at);
-        t.classList.remove('is-timed');
-        t.setAttribute('aria-pressed', String(k === at));
-      });
-      if (timed && motion) { tabs[at].style.setProperty('--dwell', dwell() + 'ms'); void tabs[at].offsetWidth; tabs[at].classList.add('is-timed'); }
-      stage.dispatchEvent(new CustomEvent('show:go', { detail: { i: at, timed: !!timed && motion, dwell: dwell() } }));
-      /* 下一张提前解码 */
-      var nx = imgs[(at + 1) % imgs.length];
-      if (nx.loading === 'lazy') nx.loading = 'eager';
-    }
-    function run() {
-      clearTimeout(timer);
-      if (held || !motion || !stage.classList.contains('is-live')) return;
-      go(at, true);
-      timer = setTimeout(function () { go(at + 1, true); run(); }, dwell());
-    }
-    tabs.forEach(function (t, k) {
-      t.addEventListener('click', function () { held = true; clearTimeout(timer); go(k, false); });
-    });
-    /* 只在进出视口时重启计时；is-3d 等其他类名变化不打断 */
-    var wasLive = false;
-    if (motion && 'MutationObserver' in window) new MutationObserver(function () {
-      var l = stage.classList.contains('is-live');
-      if (l !== wasLive) { wasLive = l; run(); }
-    }).observe(stage, { attributes: true, attributeFilter: ['class'] });
-    /* 三维就绪后从当前这款重新开始一轮 */
-    stage.addEventListener('show:ready', function () { if (!held) run(); });
-  })();
 
   /* ---------- 中英文切换：原地换文字，停在同一页 ---------- */
 
@@ -1043,7 +1065,7 @@
     var idle = window.requestIdleCallback || function (f) { return setTimeout(f, 300); };
     idle(function () {
       $$('img[loading="lazy"]').forEach(function (img) { img.loading = 'eager'; });
-      if (views.length || showcase) mountViews();
+      if (areas3d) mountViews();
     });
   });
 

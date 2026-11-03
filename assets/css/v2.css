@@ -44,9 +44,6 @@ html[lang="en"] body { letter-spacing: 0; line-height: 1.7; }
   background: radial-gradient(circle, var(--accent) 0 3px, transparent 3.5px);
 }
 
-.record { display: grid; gap: clamp(26px, 5vh, 56px); }
-.record__head .label { padding-top: 0; margin-bottom: clamp(16px, 2.6vh, 26px); }
-.record__head .lede { margin-top: 0; max-width: 62em; font-size: clamp(15px, 1.2vw, 18px); line-height: 2; }
 .figures { margin-top: 0 !important; grid-template-columns: repeat(4, 1fr) !important; border-top: 1px solid var(--line-ink); }
 .figures li { padding: clamp(14px, 2.6vh, 26px) 20px clamp(14px, 2.6vh, 26px) 0 !important; border-bottom: 1px solid var(--line-ink); }
 .figures__big { grid-column: span 2; }
@@ -57,7 +54,6 @@ html[lang="en"] body { letter-spacing: 0; line-height: 1.7; }
 @media (max-width: 820px) {
   .figures { grid-template-columns: 1fr 1fr !important; }
   .figures__big { grid-column: 1 / -1; }
-  .record__head .lede { line-height: 1.8; font-size: 14px; }
 }
 
 /* ---------- 业务范围 ---------- */
@@ -275,8 +271,6 @@ html.motion .areas__grid > li:hover svg { stroke-width: 1.5; }
 
 /* ---------- 窄屏收紧 ---------- */
 @media (max-width: 899px) {
-  #about .view__box { height: min(30vh, 300px) !important; }
-  #about .view figcaption { display: none; }
   .awards { margin-top: 14px; }
   .awards li { padding-top: 8px; padding-bottom: 8px; font-size: 14px; }
 }
@@ -288,8 +282,6 @@ html.motion .areas__grid > li:hover svg { stroke-width: 1.5; }
   .figures b { font-size: 30px !important; }
   .figures__big b { font-size: 38px !important; }
   .figures span { font-size: 12px !important; line-height: 1.4; }
-  .record { gap: 18px; }
-  .record__head .lede { font-size: 13px; line-height: 1.75; }
   .biz { gap: 16px; }
   .biz__head h2, .areas__head h2, .clients__head h2 { font-size: 24px; }
   .biz__head .lede { font-size: 13px; line-height: 1.7; }
@@ -297,83 +289,48 @@ html.motion .areas__grid > li:hover svg { stroke-width: 1.5; }
   html[lang="en"] .about__title { font-size: 21px !important; }
   html[lang="en"] #about .lede { font-size: 12.5px; line-height: 1.6; }
   html[lang="en"] .awards li { font-size: 12.5px; line-height: 1.4; padding-top: 6px; padding-bottom: 6px; }
-  html[lang="en"] .record__head .lede { font-size: 12px; line-height: 1.6; }
   html[lang="en"] .biz__head .lede { display: none; }
   html[lang="en"] .biz__list h3 { font-size: 13.5px; line-height: 1.3; }
   html[lang="en"] .biz__list ul li { font-size: 11.5px; line-height: 1.35; }
   html[lang="en"] .biz__head h2, html[lang="en"] .areas__head h2, html[lang="en"] .clients__head h2 { font-size: 21px; }
   html[lang="en"] .flow__list span { font-size: 11.5px; line-height: 1.4; }
 }
-#about .duplex:has(> .view[hidden]) { grid-template-columns: minmax(0, 52em); }
 
-/* ---------- 典型产品：爆炸图轮播 ---------- */
-.show { display: grid; gap: clamp(20px, 3.6vh, 40px); }
-.show__head .label { padding-top: 0; margin-bottom: clamp(14px, 2.4vh, 24px); }
-.show__head h2 { font-size: clamp(28px, 3.1vw, 50px); }
-.show__body { display: grid; grid-template-columns: auto clamp(220px, 21vw, 320px); justify-content: space-between; gap: clamp(18px, 2.4vw, 40px); align-items: center; }
-.show__stage { position: relative; margin: 0; aspect-ratio: 16 / 10; max-height: calc(100vh - 2 * var(--pad) - 150px); max-width: 100%; justify-self: start; width: 100%; }
-@supports (aspect-ratio: 1) { .show__stage { width: min(calc(100vw - 2 * var(--gutter) - clamp(220px, 21vw, 320px) - 40px), calc((100vh - 2 * var(--pad) - 150px) * 1.6), 1040px); } }
-.show__img {
-  position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 6px;
-  box-shadow: 0 0 0 1px var(--line-ink); opacity: 0; transform: scale(1.025);
-  transition: opacity .9s ease, transform 5.5s cubic-bezier(.2, .6, .3, 1);
-}
-.show__img.is-on { opacity: 1; transform: none; }
-.show__stage figcaption { position: absolute; right: 14px; bottom: 10px; font-size: 12px; color: var(--on-ink-2); }
-.show__tabs { display: grid; gap: 2px; border-top: 1px solid var(--line-ink); }
-.show__tab {
-  position: relative; display: grid; grid-template-columns: 34px 1fr; column-gap: 10px; width: 100%; text-align: left;
-  padding: clamp(9px, 1.7vh, 15px) 0; background: none; border: 0; border-bottom: 1px solid var(--line-ink);
-  color: var(--on-ink-2); font: inherit; cursor: pointer; transition: color .3s;
-}
-.show__tab::after { content: ""; position: absolute; left: 0; bottom: -1px; height: 1px; width: 100%; background: var(--accent); transform: scaleX(0); transform-origin: left; }
-.show__tab.is-on { color: var(--on-ink); }
-.show__tab.is-on::after { transform: scaleX(1); transition: transform var(--dwell, 0s) linear; }
-html.motion .show__tab.is-on.is-timed::after { animation: show-bar var(--dwell, 6s) linear forwards; transition: none; }
-@keyframes show-bar { from { transform: scaleX(0); } to { transform: scaleX(1); } }
-.show__tab:hover { color: var(--on-ink); }
-.show__n { grid-row: 1 / 3; font-family: var(--mono); font-size: 12px; color: var(--accent); padding-top: .35em; }
-.show__tab b { font-family: var(--serif); font-weight: 400; font-size: clamp(15px, 1.2vw, 18px); line-height: 1.45; }
-.show__tab small { font-size: 12.5px; color: var(--on-ink-2); }
-@media (max-width: 900px) {
-  .show__body { grid-template-columns: 1fr; }
-  .show__stage { width: 100%; max-height: none; }
-  .show__tabs { grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 0; gap: 0 12px; }
-  .show__tab { padding: 8px 0; }
-}
-@media (max-width: 620px) {
-  .show__head h2 { font-size: 24px; }
-  html[lang="en"] .show__head h2 { font-size: 21px; }
-  .show__tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .show__tab { grid-template-columns: 24px 1fr; column-gap: 6px; padding: 6px 0; }
-  .show__tab b { font-size: 13.5px; }
-  .show__tab small { font-size: 11px; }
-  .show__stage figcaption { font-size: 10px; right: 8px; bottom: 6px; }
+/* ---------- 2026-11-03 修改：关于我们合成一页 ---------- */
+.about2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 28px clamp(48px, 6vw, 112px); align-items: center; }
+.about2__text .label { padding-top: 0; margin-bottom: 16px; }
+.about2 h2 { font-size: clamp(30px, 3vw, 48px); }
+.about2 .lede { margin-top: 18px; font-size: clamp(15px, 1.1vw, 16.5px); }
+.about2 .figures { grid-template-columns: 1fr 1fr !important; margin: 0; }
+.about2 .figures__big { grid-column: 1 / -1; }
+.about2 .figures__big + .figures__big b { color: var(--on-ink); }
+@media (max-width: 899px) {
+  .about2 { grid-template-columns: 1fr; gap: 22px; }
 }
 
-/* 实时三维版：画布盖在静态图上，就绪后静态图退场 */
-.show__gl { position: absolute; inset: 0; width: 100%; height: 100%; display: block; border-radius: 6px; opacity: 0; transition: opacity .28s ease; touch-action: pan-y; cursor: grab; }
-.show__stage.is-3d { background: radial-gradient(ellipse 75% 70% at 50% 46%, #25282d 0%, #17191c 60%, #111214 100%); border-radius: 6px; box-shadow: 0 0 0 1px var(--line-ink); }
-.show__stage.is-3d .show__gl { opacity: 1; }
-.show__stage.is-3d .show__gl.is-out { opacity: 0; }
-.show__stage.is-3d .show__img { opacity: 0; transition: opacity .6s ease; }
-.show__stage.is-point .show__gl { cursor: pointer; }
-.show__stage.is-grab .show__gl { cursor: grabbing; }
-.show__tip {
-  position: absolute; left: 0; top: 0; z-index: 2; pointer-events: none; white-space: nowrap;
-  padding: 5px 10px; border-radius: 4px; font-size: 13px; line-height: 1.4; color: var(--on-ink);
-  background: rgba(17, 18, 20, .82); box-shadow: 0 0 0 1px rgba(232, 105, 43, .55); backdrop-filter: blur(6px);
-  opacity: 0; transition: opacity .18s ease;
+/* 十二个领域：编号、名称居中；中文按“与”分两行，英文自动均分 */
+.areas__grid > li { text-align: center; }
+.areas__n { display: block; }
+.areas__grid h3 { min-height: 2.9em; text-wrap: balance; }
+.areas__grid h3 span { display: block; }
+
+/* 三维版：画布占图标的位置，建好的格子才换掉线条图标 */
+.areas__gl { display: none; width: 100%; height: clamp(64px, 16.5vh, 150px); margin: 0 auto clamp(8px, 1.6vh, 14px); cursor: grab; touch-action: pan-y; }
+.areas__grid > li.is-3d .areas__gl { display: block; }
+.areas__grid > li.is-3d svg { display: none; }
+.areas__grid > li.is-3d:active .areas__gl { cursor: grabbing; }
+@media (min-width: 900px) { .areas__gl { margin-bottom: clamp(10px, 2vh, 18px); } }
+
+/* 商务合作：合作流程放大，占更宽的一栏 */
+@media (min-width: 1081px) {
+  .contact .duplex { grid-template-columns: minmax(0, 4fr) minmax(0, 6fr); }
+  .flow .label { font-size: 14px; }
+  .flow__list::before { left: 19px; }
+  .flow__list > li { grid-template-columns: 40px 1fr; column-gap: 24px; padding: clamp(4px, 1vh, 10px) 0 !important; }
+  .flow__list > li::before { width: 39px; height: 39px; font-size: 12.5px; }
+  .flow__list b { font-size: clamp(18px, min(1.4vw, 2.5vh), 22px) !important; line-height: 1.45; }
+  .flow__list span { font-size: clamp(14px, min(1vw, 1.85vh), 16px) !important; line-height: 1.6; }
 }
-.show__tip.is-on { opacity: 1; }
-.show__stage figcaption { z-index: 1; pointer-events: none; }
-.show__hint { display: none; position: absolute; left: 14px; bottom: 10px; z-index: 1; margin: 0; pointer-events: none; font-size: 12px; color: var(--on-ink-2); }
-.show__hint::before { content: ""; display: inline-block; width: 6px; height: 6px; margin-right: 8px; border-radius: 50%; background: var(--accent); vertical-align: 1px; animation: show-ping 2.4s ease-in-out infinite; }
-@keyframes show-ping { 0%, 100% { opacity: .35; } 50% { opacity: 1; } }
-.show__stage.is-3d .show__hint { display: block; }
-.show__hint--touch { display: none; }
-@media (hover: none), (pointer: coarse) { .show__hint--fine { display: none; } .show__hint--touch { display: inline; } }
-@media (max-width: 620px) { .show__hint { font-size: 10px; left: 8px; bottom: 6px; } }
 
 /* ================================================================
    字体与留白（2026-11-03）：统一字号阶梯和间距，只作用于 ≥900px；
@@ -404,7 +361,7 @@ html[lang="en"] .label { letter-spacing: .1em; text-transform: uppercase; font-s
   .hero__lead { font-weight: 300; letter-spacing: .18em; }
 
   /* 通用页头 */
-  :is(.duplex, .record__head, .biz__head, .areas__head, .show__head, .clients__head) .label { margin-bottom: var(--s1) !important; }
+  :is(.duplex, .about2__text, .biz__head, .areas__head, .clients__head) .label { margin-bottom: var(--s1) !important; }
   h2 { letter-spacing: .03em; line-height: 1.32; }
   html[lang="en"] h2 { letter-spacing: 0; }
   .lede { font-weight: 300; line-height: 1.95; letter-spacing: .04em; max-width: 36em; }
@@ -412,14 +369,10 @@ html[lang="en"] .label { letter-spacing: .1em; text-transform: uppercase; font-s
   .duplex .lede, .biz__head .lede { margin-top: var(--s2); font-size: clamp(15px, 1.15vw, 17px); }
 
   /* 关于我们 */
-  #about .duplex { gap: 24px clamp(48px, 6vw, 112px); }
   .awards { margin-top: var(--s3); }
   .awards li { padding-top: clamp(13px, 2.3vh, 21px); padding-bottom: clamp(13px, 2.3vh, 21px); letter-spacing: .04em; font-size: clamp(15px, 1.15vw, 17px); }
 
   /* 成果 */
-  .record { gap: var(--s3); }
-  .record__head h2 { font-size: clamp(32px, 3.1vw, 50px); }
-  .record__head .lede { margin-top: var(--s2); max-width: 54em; font-size: clamp(14.5px, 1.05vw, 16px); line-height: 2.05; }
   .figures li { padding-top: clamp(16px, 3vh, 30px) !important; padding-bottom: clamp(16px, 3vh, 30px) !important; }
   .figures__big b { font-size: clamp(40px, min(5.4vw, 9.6vh), 90px) !important; }
   .figures b { font-size: clamp(32px, min(3.2vw, 6.2vh), 52px) !important; letter-spacing: .01em; }
@@ -428,7 +381,6 @@ html[lang="en"] .label { letter-spacing: .1em; text-transform: uppercase; font-s
 
   /* 业务范围 */
   .biz, .areas, .clients { gap: var(--s3); }
-  .show { gap: var(--s3); }
   .biz__list { border-top-color: rgba(237, 233, 225, .1); }
   .biz__list > li { padding: clamp(22px, 3.8vh, 38px) clamp(18px, 1.8vw, 32px) clamp(22px, 3.8vh, 38px); border-right-color: rgba(237, 233, 225, .08); }
   .biz__list h3 { margin-top: 14px; letter-spacing: .04em; }
@@ -446,12 +398,6 @@ html[lang="en"] .label { letter-spacing: .1em; text-transform: uppercase; font-s
   html[lang="en"] .areas__grid h3 { letter-spacing: 0; }
 
   /* 典型产品 */
-  .show__tab { padding-top: clamp(10px, 1.7vh, 16px) !important; padding-bottom: clamp(10px, 1.7vh, 16px) !important; }
-  .show__stage { max-height: calc(100vh - 2 * var(--pad) - 190px); }
-  @supports (aspect-ratio: 1) { .show__stage { width: min(calc(100vw - 2 * var(--gutter) - clamp(220px, 21vw, 320px) - 40px), calc((100vh - 2 * var(--pad) - 190px) * 1.6), 1040px); } }
-  .show__tab b { letter-spacing: .04em; font-size: clamp(15px, 1.15vw, 18px); }
-  .show__tab small { font-size: 12.5px; letter-spacing: .06em; }
-  html[lang="en"] .show__tab b, html[lang="en"] .show__tab small { letter-spacing: 0; }
 
   /* 服务单位：卡片稍小，间距放大 */
   .clients__grid { gap: clamp(22px, 4.4vh, 44px) clamp(18px, 2vw, 34px); }
@@ -476,16 +422,27 @@ html[lang="en"] .label { letter-spacing: .1em; text-transform: uppercase; font-s
 /* 矮屏（笔记本 680–800 高）：间距按比例收，不让页面整体缩小 */
 @media (min-width: 900px) and (max-height: 800px) {
   :root { --s1: 14px; --s2: 12px; --s3: 26px; }
-  .show__tab { padding-top: 7px !important; padding-bottom: 7px !important; }
-  .flow__list > li { padding: 5px 0; }
+  .flow__list > li { padding: 3px 0 !important; }
   .flow .label { margin-bottom: 10px; }
 }
 /* 英文：词本身有间隔，不再加字距；标题更长，字号收一档 */
 @media (min-width: 900px) {
   html[lang="en"] :is(.biz__list h3, .awards li, .contact .k, .contact address, .figures span, .hero__lead, .nav) { letter-spacing: 0; }
-  html[lang="en"] :is(.show__head, .biz__head, .areas__head, .clients__head, .record__head) h2 { font-size: clamp(28px, 2.6vw, 44px); }
+  html[lang="en"] :is(.biz__head, .areas__head, .clients__head, .about2__text) h2 { font-size: clamp(28px, 2.6vw, 44px); }
   html[lang="en"] .biz__list > li { padding-top: clamp(16px, 2.8vh, 30px); padding-bottom: clamp(16px, 2.8vh, 30px); }
   html[lang="en"] .biz__list ul { margin-top: clamp(10px, 2vh, 18px); gap: clamp(7px, 1.3vh, 12px); }
   html[lang="en"] .biz__list ul li { line-height: 1.45; }
   html[lang="en"] .hero__lead { letter-spacing: .04em; }
+}
+/* 小屏手机（≤620 宽且 ≤700 高）：“关于我们”合页后内容多，再收一档 */
+@media (max-width: 620px) and (max-height: 700px) {
+  .about2 { gap: 12px; }
+  .about2 h2 { font-size: 21px; }
+  .about2 .lede { margin-top: 8px; font-size: 12px !important; line-height: 1.6 !important; }
+  .about2 .awards { margin-top: 8px; }
+  .about2 .awards li { padding-top: 4px; padding-bottom: 4px; font-size: 12px; }
+  .about2 .figures li { padding: 6px 8px 6px 0 !important; }
+  .about2 .figures__big b { font-size: 28px !important; }
+  .about2 .figures b { font-size: 22px !important; }
+  .about2 .figures span { font-size: 11px !important; }
 }
