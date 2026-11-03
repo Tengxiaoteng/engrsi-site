@@ -1,0 +1,307 @@
+/* 2026-11 版结构：首页 / 关于我们 / 业务范围 / 服务单位 / 商务合作，中英双语 */
+
+html.lang-wait body { visibility: hidden; }
+
+/* ---------- 顶栏：语言切换 ---------- */
+.top__in { gap: 0 clamp(14px, 2vw, 28px); }
+.nav { margin-left: auto; }
+.lang {
+  display: none; align-items: center; gap: 6px; flex: none;
+  background: none; border: 1px solid var(--line-ink); color: var(--on-ink-2);
+  font: inherit; font-size: 13px; letter-spacing: .06em; padding: 6px 12px; cursor: pointer;
+  transition: border-color .3s, color .3s;
+}
+html.i18n .lang { display: inline-flex; }
+.lang i { font-style: normal; opacity: .4; }
+.lang:hover { border-color: var(--accent); color: var(--on-ink); }
+html:not([lang="en"]) .lang__zh, html[lang="en"] .lang__en { color: var(--on-ink); }
+@media (max-width: 1080px) {
+  .menu-btn { margin-left: auto; }
+  .lang { order: 3; }
+}
+
+.label b { font-weight: inherit; }
+
+/* ---------- 首页 ---------- */
+.hero h1 { font-size: clamp(34px, min(5.6vw, 10vh), 92px); }
+html[lang="en"] .hero h1 { font-size: clamp(30px, min(4.9vw, 9vh), 80px); letter-spacing: .01em; line-height: 1.2; }
+.hero__lead { font-size: clamp(17px, 1.6vw, 23px); letter-spacing: .08em; }
+html[lang="en"] .hero__lead { letter-spacing: .02em; }
+
+html[lang="en"] h2 { letter-spacing: .005em; line-height: 1.25; }
+html[lang="en"] body { letter-spacing: 0; line-height: 1.7; }
+
+/* ---------- 关于我们 ---------- */
+.about__title { font-size: clamp(28px, 2.7vw, 44px) !important; }
+.awards { margin-top: clamp(22px, 4.4vh, 44px); display: grid; gap: 0; border-top: 1px solid var(--line-ink); }
+.awards li {
+  position: relative; padding: clamp(11px, 2vh, 18px) 0 clamp(11px, 2vh, 18px) 34px;
+  border-bottom: 1px solid var(--line-ink); font-family: var(--serif); font-size: clamp(15px, 1.25vw, 18px); line-height: 1.5;
+}
+.awards li::before {
+  content: ""; position: absolute; left: 4px; top: 50%; width: 14px; height: 14px; margin-top: -7px;
+  border: 1px solid var(--accent); border-radius: 50%;
+  background: radial-gradient(circle, var(--accent) 0 3px, transparent 3.5px);
+}
+
+.record { display: grid; gap: clamp(26px, 5vh, 56px); }
+.record__head .label { padding-top: 0; margin-bottom: clamp(16px, 2.6vh, 26px); }
+.record__head .lede { margin-top: 0; max-width: 62em; font-size: clamp(15px, 1.2vw, 18px); line-height: 2; }
+.figures { margin-top: 0 !important; grid-template-columns: repeat(4, 1fr) !important; border-top: 1px solid var(--line-ink); }
+.figures li { padding: clamp(14px, 2.6vh, 26px) 20px clamp(14px, 2.6vh, 26px) 0 !important; border-bottom: 1px solid var(--line-ink); }
+.figures__big { grid-column: span 2; }
+.figures b { font-size: clamp(34px, min(3.6vw, 7vh), 58px) !important; line-height: 1.15; }
+.figures__big b { font-size: clamp(40px, min(5.4vw, 10vh), 92px) !important; color: var(--on-ink); }
+.figures__big:first-child b { color: var(--accent); }
+.figures span { font-size: clamp(13px, 1vw, 15px) !important; }
+@media (max-width: 820px) {
+  .figures { grid-template-columns: 1fr 1fr !important; }
+  .figures__big { grid-column: 1 / -1; }
+  .record__head .lede { line-height: 1.8; font-size: 14px; }
+}
+
+/* ---------- 业务范围 ---------- */
+.biz { display: grid; gap: clamp(26px, 5vh, 56px); }
+.biz__head .label, .areas__head .label, .clients__head .label { padding-top: 0; margin-bottom: clamp(14px, 2.4vh, 24px); }
+.biz__head h2, .areas__head h2, .clients__head h2 { font-size: clamp(28px, 3.1vw, 50px); }
+.biz__head .lede { margin-top: clamp(12px, 2vh, 20px); font-size: clamp(15px, 1.2vw, 18px); }
+.biz__list { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0; border-top: 1px solid var(--line-ink); counter-reset: none; }
+.biz__list > li {
+  position: relative; padding: clamp(18px, 3vh, 30px) clamp(14px, 1.4vw, 24px) clamp(18px, 3vh, 30px);
+  border-right: 1px solid var(--line-ink); transition: background .5s;
+}
+.biz__list > li:first-child { padding-left: 0; }
+.biz__list > li:last-child { border-right: 0; }
+.biz__list > li::before {
+  content: ""; position: absolute; left: 0; right: 0; top: -1px; height: 2px; background: var(--accent);
+  transform: scaleX(0); transform-origin: left; transition: transform .8s var(--ease);
+}
+.biz__list > li:hover::before { transform: scaleX(1); }
+.biz__n { font-family: var(--mono); font-size: 13px; color: var(--accent); }
+.biz__list h3 { margin-top: 10px; font-family: var(--serif); font-weight: 400; font-size: clamp(17px, 1.35vw, 21px); line-height: 1.45; min-height: 2.9em; }
+.biz__list ul { margin-top: clamp(10px, 2vh, 18px); display: grid; gap: clamp(6px, 1.2vh, 11px); }
+.biz__list ul li { position: relative; padding-left: 14px; font-size: clamp(13.5px, 1vw, 15px); line-height: 1.55; color: var(--on-ink-2); }
+.biz__list ul li::before { content: ""; position: absolute; left: 0; top: .72em; width: 5px; height: 1px; background: var(--accent); }
+@media (max-width: 900px) {
+  .biz__list { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .biz__list > li { border-bottom: 1px solid var(--line-ink); }
+  .biz__list > li:nth-child(3n) { border-right: 0; }
+  .biz__list > li:nth-child(3n + 1) { padding-left: 0; }
+  .biz__list h3 { min-height: 0; }
+}
+@media (max-width: 620px) {
+  .biz__list { grid-template-columns: 1fr 1fr; }
+  .biz__list > li { padding: 12px 10px 12px 0 !important; border-right: 0; }
+  .biz__list > li:nth-child(2n) { padding-left: 10px !important; border-left: 1px solid var(--line-ink); }
+  .biz__list > li:last-child { grid-column: 1 / -1; border-left: 0; padding-left: 0 !important; }
+  .biz__list > li:last-child ul { grid-template-columns: 1fr 1fr; column-gap: 10px; }
+  .biz__list h3 { margin-top: 2px; font-size: 15px; }
+  .biz__list ul { margin-top: 6px; gap: 3px; }
+  .biz__list ul li { font-size: 12.5px; line-height: 1.45; }
+}
+
+/* ---------- 重点布局领域 ---------- */
+.areas { display: grid; gap: clamp(24px, 4.4vh, 48px); }
+.areas__grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 1px; background: var(--line-ink); border: 1px solid var(--line-ink); }
+.areas__grid > li {
+  position: relative; background: var(--ink); padding: clamp(12px, 2vh, 20px) clamp(12px, 1.1vw, 18px) clamp(14px, 2.2vh, 22px);
+  transition: background .45s;
+}
+.areas__grid > li:hover { background: #15171a; }
+.areas__grid svg {
+  display: block; width: 100%; height: auto; max-height: clamp(54px, 14vh, 128px); margin: 0 auto clamp(8px, 1.6vh, 14px);
+  fill: none; stroke: var(--on-ink); stroke-width: 1.3; stroke-linecap: round; stroke-linejoin: round; overflow: hidden;
+}
+.areas__grid svg .o { stroke: var(--accent); }
+.areas__n { font-family: var(--mono); font-size: 12px; color: var(--accent); }
+.areas__grid h3 { margin-top: 4px; font-family: var(--serif); font-weight: 400; font-size: clamp(14px, 1.08vw, 17px); line-height: 1.45; }
+html[lang="en"] .areas__grid h3 { font-size: clamp(13px, .98vw, 15.5px); line-height: 1.35; }
+@media (max-width: 900px) { .areas__grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+@media (max-width: 620px) {
+  .areas__grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .areas__grid > li { padding: 10px 8px 12px; }
+  .areas__grid svg { max-height: 50px; margin-bottom: 6px; }
+  .areas__grid h3 { font-size: 12.5px; line-height: 1.35; }
+  html[lang="en"] .areas__grid h3 { font-size: 11.5px; }
+  .areas__n { font-size: 10.5px; }
+}
+
+/* 领域动画：静止时是一张完整的图；只在 motion 且看得见时动 */
+.fx-trail { stroke: var(--line-ink); stroke-dasharray: 2 5; }
+.fx-fly { transform: translate(62px, 34px) rotate(-22deg); }
+.fx-drone { transform: translate(92px, 52px); }
+.fx-rotor, .fx-core, .fx-at, .fx-b1, .fx-b2, .fx-b3, .fx-b4, .fx-smoke { transform-box: fill-box; transform-origin: center; }
+.fx-core, .fx-b1, .fx-b2, .fx-b3, .fx-b4 { fill: var(--accent); fill-opacity: .85; stroke: none; }
+.fx-walk { transform: translate(60px, 60px); }
+.fx-arm-l { transform-box: fill-box; transform-origin: 100% 0; }
+.fx-arm-r { transform-box: fill-box; transform-origin: 0 0; }
+.fx-leg-l, .fx-leg-r { transform-box: fill-box; transform-origin: 50% 0; }
+.fx-car { transform: translate(60px, 61.5px); }
+.fx-wheel { transform-box: fill-box; transform-origin: center; }
+.fx-road { stroke-dasharray: 12 8; }
+.fx-ship { transform: translate(60px, 46px); }
+.fx-sea2 { stroke: var(--on-ink-2); opacity: .5; }
+.fx-at { fill: var(--accent); fill-opacity: .25; }
+.fx-at.a7 { fill: var(--on-ink); fill-opacity: .2; }
+.fx-rung circle { fill: var(--on-ink); stroke: none; }
+.fx-rung circle.o { fill: var(--accent); }
+.fx-rung path { stroke: var(--on-ink-2); }
+.fx-g1, .fx-g2 { transform-box: fill-box; transform-origin: center; }
+.fx-leaf { transform-box: fill-box; transform-origin: 0 100%; }
+.fx-code { transform-box: fill-box; transform-origin: 0 50%; }
+.fx-smoke { fill: var(--on-ink-2); stroke: none; opacity: 0; }
+
+html.motion .areas__grid.is-live .fx-fly { animation: fx-fly 4.6s linear infinite; }
+html.motion .areas__grid.is-live .fx-trail { animation: fx-dash 1.6s linear infinite; }
+html.motion .areas__grid.is-live .fx-drone { animation: fx-hover 2.4s ease-in-out infinite alternate; }
+html.motion .areas__grid.is-live .fx-rotor { animation: fx-rotor .18s linear infinite alternate; }
+html.motion .areas__grid.is-live .fx-walk { animation: fx-walk 3.2s ease-in-out infinite alternate; }
+html.motion .areas__grid.is-live .fx-arm-l, html.motion .areas__grid.is-live .fx-leg-r { animation: fx-swing .8s ease-in-out infinite alternate; }
+html.motion .areas__grid.is-live .fx-arm-r, html.motion .areas__grid.is-live .fx-leg-l { animation: fx-swing .8s ease-in-out infinite alternate-reverse; }
+html.motion .areas__grid.is-live .fx-blink { animation: fx-blink 1.6s steps(1, end) infinite; }
+html.motion .areas__grid.is-live .fx-trace { stroke-dasharray: 3 7; animation: fx-dash 1.2s linear infinite; }
+html.motion .areas__grid.is-live .fx-core { animation: fx-pulse 1.8s ease-in-out infinite; }
+html.motion .areas__grid.is-live .fx-spin { animation: fx-spin 3.2s linear infinite; }
+html.motion .areas__grid.is-live .fx-b1 { animation: fx-charge 3.2s infinite; }
+html.motion .areas__grid.is-live .fx-b2 { animation: fx-charge2 3.2s infinite; }
+html.motion .areas__grid.is-live .fx-b3 { animation: fx-charge3 3.2s infinite; }
+html.motion .areas__grid.is-live .fx-b4 { animation: fx-charge4 3.2s infinite; }
+html.motion .areas__grid.is-live .fx-road { animation: fx-road .7s linear infinite; }
+html.motion .areas__grid.is-live .fx-wheel { animation: fx-spin .7s linear infinite; }
+html.motion .areas__grid.is-live .fx-car { animation: fx-bump .35s ease-in-out infinite alternate; }
+html.motion .areas__grid.is-live .fx-wave1 { animation: fx-signal 1.4s ease-out infinite; }
+html.motion .areas__grid.is-live .fx-wave2 { animation: fx-signal 1.4s ease-out .35s infinite; }
+html.motion .areas__grid.is-live .fx-ship { animation: fx-rock 2.6s ease-in-out infinite alternate; }
+html.motion .areas__grid.is-live .fx-sea { animation: fx-sea 2.4s linear infinite; }
+html.motion .areas__grid.is-live .fx-sea2 { animation: fx-sea 3.6s linear infinite reverse; }
+html.motion .areas__grid.is-live .fx-at { animation: fx-atom 2.4s ease-in-out infinite; }
+html.motion .areas__grid.is-live .fx-at.a2 { animation-delay: .4s; }
+html.motion .areas__grid.is-live .fx-at.a3 { animation-delay: .8s; }
+html.motion .areas__grid.is-live .fx-at.a4 { animation-delay: 1.2s; }
+html.motion .areas__grid.is-live .fx-at.a5 { animation-delay: 1.6s; }
+html.motion .areas__grid.is-live .fx-at.a6 { animation-delay: 2s; }
+html.motion .areas__grid.is-live .fx-at.a7 { animation-duration: 1.2s; }
+html.motion .areas__grid.is-live .fx-rung { animation: fx-helix 2.8s ease-in-out infinite; animation-delay: calc(var(--k) * -.28s); }
+html.motion .areas__grid.is-live .fx-g1 { animation: fx-spin 6s linear infinite; }
+html.motion .areas__grid.is-live .fx-g2 { animation: fx-spin 4s linear infinite reverse; }
+html.motion .areas__grid.is-live .fx-cycle { animation: fx-spin 9s linear infinite; }
+html.motion .areas__grid.is-live .fx-leaf { animation: fx-sway 2.8s ease-in-out infinite alternate; }
+html.motion .areas__grid.is-live .fx-code { animation: fx-type 4s ease-out infinite; }
+html.motion .areas__grid.is-live .fx-code.c2 { animation-name: fx-type2; }
+html.motion .areas__grid.is-live .fx-code.c3 { animation-name: fx-type3; }
+html.motion .areas__grid.is-live .fx-code.c4 { animation-name: fx-type4; }
+html.motion .areas__grid.is-live .fx-cursor { animation: fx-blink 1s steps(1, end) infinite; }
+html.motion .areas__grid.is-live .fx-smoke { animation: fx-smoke 3s ease-out infinite; }
+html.motion .areas__grid.is-live .fx-smoke.s2 { animation-delay: 1s; }
+html.motion .areas__grid.is-live .fx-smoke.s3 { animation-delay: 2s; }
+html.motion .areas__grid > li:hover svg { stroke-width: 1.5; }
+
+@keyframes fx-fly {
+  0% { transform: translate(4px, 60px) rotate(-22deg); opacity: 0; }
+  12%, 85% { opacity: 1; }
+  100% { transform: translate(118px, 12px) rotate(-22deg); opacity: 0; }
+}
+@keyframes fx-dash { to { stroke-dashoffset: -14; } }
+@keyframes fx-hover { from { transform: translate(92px, 54px); } to { transform: translate(98px, 44px); } }
+@keyframes fx-rotor { from { transform: scaleX(1); } to { transform: scaleX(.25); } }
+@keyframes fx-walk { from { transform: translate(30px, 60px); } to { transform: translate(90px, 60px); } }
+@keyframes fx-swing { from { transform: rotate(-24deg); } to { transform: rotate(24deg); } }
+@keyframes fx-blink { 0% { opacity: 1; } 50% { opacity: .15; } }
+@keyframes fx-pulse { 0%, 100% { fill-opacity: .35; } 50% { fill-opacity: 1; } }
+@keyframes fx-spin { to { transform: rotate(360deg); } }
+@keyframes fx-charge { 0% { opacity: .1; } 10%, 90% { opacity: 1; } 100% { opacity: .1; } }
+@keyframes fx-charge2 { 0%, 25% { opacity: .1; } 35%, 90% { opacity: 1; } 100% { opacity: .1; } }
+@keyframes fx-charge3 { 0%, 50% { opacity: .1; } 60%, 90% { opacity: 1; } 100% { opacity: .1; } }
+@keyframes fx-charge4 { 0%, 72% { opacity: .1; } 80%, 90% { opacity: 1; } 100% { opacity: .1; } }
+@keyframes fx-road { to { stroke-dashoffset: 20; } }
+@keyframes fx-bump { from { transform: translate(60px, 61.5px); } to { transform: translate(60px, 60.6px); } }
+@keyframes fx-signal { 0% { opacity: 0; } 30% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes fx-rock { from { transform: translate(60px, 47px) rotate(-3deg); } to { transform: translate(60px, 44px) rotate(3deg); } }
+@keyframes fx-sea { to { transform: translateX(40px); } }
+@keyframes fx-atom { 0%, 100% { transform: scale(1); fill-opacity: .25; } 40% { transform: scale(1.7); fill-opacity: .9; } }
+@keyframes fx-helix { 0%, 100% { transform: scaleY(1); opacity: 1; } 50% { transform: scaleY(-1); opacity: .55; } }
+@keyframes fx-sway { from { transform: rotate(-6deg); } to { transform: rotate(5deg); } }
+@keyframes fx-type { 0% { transform: scaleX(0); } 12%, 88% { transform: scaleX(1); } 100% { transform: scaleX(0); } }
+@keyframes fx-type2 { 0%, 14% { transform: scaleX(0); } 28%, 88% { transform: scaleX(1); } 100% { transform: scaleX(0); } }
+@keyframes fx-type3 { 0%, 30% { transform: scaleX(0); } 44%, 88% { transform: scaleX(1); } 100% { transform: scaleX(0); } }
+@keyframes fx-type4 { 0%, 46% { transform: scaleX(0); } 58%, 88% { transform: scaleX(1); } 100% { transform: scaleX(0); } }
+@keyframes fx-smoke { 0% { transform: translate(0, 0) scale(.6); opacity: 0; } 20% { opacity: .7; } 100% { transform: translate(10px, -16px) scale(2.2); opacity: 0; } }
+
+/* ---------- 服务单位：彩色 logo，悬停放大 ---------- */
+.clients { display: grid; gap: clamp(24px, 4.6vh, 50px); }
+.clients__grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: clamp(18px, 3vh, 30px) clamp(12px, 1.3vw, 22px); }
+.clients__grid > li { display: flex; flex-direction: column; gap: 10px; }
+.clients__logo {
+  display: flex; align-items: center; justify-content: center;
+  height: clamp(78px, 16vh, 150px); padding: clamp(12px, 2vh, 20px) clamp(12px, 1.2vw, 22px);
+  background: #fff; border-radius: 10px;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, .08), 0 8px 24px rgba(0, 0, 0, .25);
+  transition: transform .45s var(--ease), box-shadow .45s var(--ease);
+  will-change: transform;
+}
+.clients__logo img { max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; }
+.clients__grid > li > span:last-child { font-size: clamp(12px, .95vw, 14px); line-height: 1.45; color: var(--on-ink-2); text-align: center; transition: color .3s; }
+.clients__grid > li:hover .clients__logo { transform: translateY(-6px) scale(1.08); box-shadow: 0 0 0 2px var(--accent), 0 22px 44px rgba(0, 0, 0, .5); }
+.clients__grid > li:hover > span:last-child { color: var(--on-ink); }
+@media (max-width: 1080px) { .clients__grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+@media (max-width: 620px) {
+  .clients__grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px 8px; }
+  .clients__logo { height: 62px; padding: 7px; border-radius: 7px; }
+  .clients__grid > li { gap: 5px; }
+  .clients__grid > li > span:last-child { font-size: 11px; line-height: 1.3; }
+}
+
+/* ---------- 商务合作：七步流程 ---------- */
+.flow .label { padding-top: 0; margin-bottom: clamp(12px, 2vh, 20px); }
+.flow__list { counter-reset: step; position: relative; }
+.flow__list::before { content: ""; position: absolute; left: 15px; top: 14px; bottom: 14px; width: 1px; background: var(--line-ink); }
+.flow__list > li { counter-increment: step; position: relative; display: grid; grid-template-columns: 32px 1fr; column-gap: 18px; padding: clamp(6px, 1.25vh, 12px) 0; }
+.flow__list > li::before {
+  content: counter(step, decimal-leading-zero); grid-row: 1 / 3; align-self: start;
+  width: 31px; height: 31px; display: grid; place-items: center; border-radius: 50%;
+  background: var(--ink); border: 1px solid var(--line-ink); font-family: var(--mono); font-size: 11px; color: var(--accent);
+  transition: border-color .3s, background .3s, color .3s;
+}
+.flow__list > li:hover::before { border-color: var(--accent); background: var(--accent); color: #140a05; }
+.flow__list b { font-family: var(--serif); font-weight: 400; font-size: clamp(16px, 1.25vw, 19px); line-height: 1.5; }
+.flow__list span { font-size: clamp(13px, .98vw, 14.5px); line-height: 1.6; color: var(--on-ink-2); }
+@media (max-width: 620px) {
+  .flow__list > li { padding: 4px 0; column-gap: 12px; grid-template-columns: 26px 1fr; }
+  .flow__list > li::before { width: 25px; height: 25px; font-size: 10px; }
+  .flow__list::before { left: 12px; }
+  .flow__list b { font-size: 14.5px; }
+  .flow__list span { font-size: 12px; line-height: 1.45; }
+}
+
+/* ---------- 窄屏收紧 ---------- */
+@media (max-width: 899px) {
+  #about .view__box { height: min(30vh, 300px) !important; }
+  #about .view figcaption { display: none; }
+  .awards { margin-top: 14px; }
+  .awards li { padding-top: 8px; padding-bottom: 8px; font-size: 14px; }
+}
+@media (max-width: 620px) {
+  .about__title { font-size: 23px !important; }
+  #about .lede { font-size: 13.5px; line-height: 1.7; }
+  .figures li, .figures li:last-child { grid-column: auto; padding: 10px 10px 10px 0 !important; }
+  .figures .figures__big { grid-column: 1 / -1; }
+  .figures b { font-size: 30px !important; }
+  .figures__big b { font-size: 38px !important; }
+  .figures span { font-size: 12px !important; line-height: 1.4; }
+  .record { gap: 18px; }
+  .record__head .lede { font-size: 13px; line-height: 1.75; }
+  .biz { gap: 16px; }
+  .biz__head h2, .areas__head h2, .clients__head h2 { font-size: 24px; }
+  .biz__head .lede { font-size: 13px; line-height: 1.7; }
+  html[lang="en"] .hero h1 { font-size: 31px; }
+  html[lang="en"] .about__title { font-size: 21px !important; }
+  html[lang="en"] #about .lede { font-size: 12.5px; line-height: 1.6; }
+  html[lang="en"] .awards li { font-size: 12.5px; line-height: 1.4; padding-top: 6px; padding-bottom: 6px; }
+  html[lang="en"] .record__head .lede { font-size: 12px; line-height: 1.6; }
+  html[lang="en"] .biz__head .lede { display: none; }
+  html[lang="en"] .biz__list h3 { font-size: 13.5px; line-height: 1.3; }
+  html[lang="en"] .biz__list ul li { font-size: 11.5px; line-height: 1.35; }
+  html[lang="en"] .biz__head h2, html[lang="en"] .areas__head h2, html[lang="en"] .clients__head h2 { font-size: 21px; }
+  html[lang="en"] .flow__list span { font-size: 11.5px; line-height: 1.4; }
+}
+#about .duplex:has(> .view[hidden]) { grid-template-columns: minmax(0, 52em); }

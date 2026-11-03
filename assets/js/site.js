@@ -14,6 +14,12 @@
   function ease(t) { return t * t * (3 - 2 * t); }
   function seg(p, a, b) { return clamp((p - a) / (b - a)); }
 
+  /* ---------- 语言：要在逐字拆分之前换好 ---------- */
+
+  var I18N = window.I18N || null;
+  if (I18N) I18N.apply();
+  function tr(zh, en) { return I18N ? I18N.t(zh, en) : zh; }
+
   /* ---------- 逐字拆分 ---------- */
 
   var TOKEN = /[A-Za-z0-9][A-Za-z0-9.,%\-]*|\s+|[\s\S]/g;
@@ -79,7 +85,7 @@
     $$('h1, h2, .pull, .claim, .case__text h3, .study h3').forEach(split);
 
     /* 成组依次进场 */
-    $$('.trio, .fields, .howto, .logos, .stats, .honors, .values, .goals, .facts').forEach(function (group) {
+    $$('.trio, .fields, .howto, .logos, .stats, .honors, .values, .goals, .facts, .awards, .biz__list, .areas__grid, .clients__grid, .flow__list').forEach(function (group) {
       group.classList.add('stagger');
       if (!group.classList.contains('reveal')) group.classList.add('reveal');
       Array.prototype.slice.call(group.children).forEach(function (child, i) {
@@ -168,7 +174,8 @@
   /* 内容必须赶在下一页盖上来之前出现：滚得快时不演完整动画 */
   function show(el) {
     if (el.classList.contains('is-in')) return;
-    var quick = lenis && Math.abs(lenis.velocity) > 16;
+    /* 桌面整页翻，内容有足够的时间演完；手机自由滚动，滚得快时直接显示 */
+    var quick = lenis && !fine && Math.abs(lenis.velocity) > 16;
     if (quick) el.classList.add('quick');
     el.classList.add('is-in');
     if (seen) seen.unobserve(el);
@@ -183,7 +190,7 @@
       entries.forEach(function (entry) {
         if (entry.isIntersecting) show(entry.target);
       });
-    }, { rootMargin: '0px 0px 14% 0px', threshold: 0 });
+    }, { rootMargin: fine ? '0px 0px -24% 0px' : '0px 0px 14% 0px', threshold: 0 });
     items.forEach(function (el) { seen.observe(el); });
   }
 
@@ -225,7 +232,7 @@
     top.classList.toggle('is-open', open);
     if (open) top.classList.remove('is-hidden');
     btn.setAttribute('aria-expanded', String(open));
-    btn.firstElementChild.textContent = open ? '关闭' : '菜单';
+    btn.firstElementChild.textContent = open ? tr('关闭', 'Close') : tr('菜单', 'Menu');
   }
   btn.addEventListener('click', function () { setMenu(!nav.classList.contains('is-open')); });
   nav.addEventListener('click', function (e) {
@@ -256,11 +263,21 @@
   }
 
   function easeInOut(t) { return t < 0.5 ? 8 * t * t * t * t : 1 - Math.pow(-2 * t + 2, 4) / 2; }
-  function easeOut(t) { return 1 - Math.pow(1 - t, 3); }
+
+  /* 一次只翻一页：动画走完之前不接受新的输入 */
+  var TURN = 1.25, turning = false, turnEnd = 0;
+
+  function easeTurn(t) { return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; }
 
   function glide(y, duration, curve) {
-    lenis.scrollTo(clamp(y, 0, m.max), { duration: duration, easing: curve || easeInOut, lock: false });
+    y = clamp(y, 0, m.max);
+    if (Math.abs(y - lenis.animatedScroll) < 1) return;
+    turning = true;
+    turnEnd = performance.now() + duration * 1000 + 60;
+    lenis.scrollTo(y, { duration: duration, easing: curve, lock: false, force: true });
   }
+
+  function turn(to) { glide(to, TURN, easeTurn); }
 
   document.addEventListener('click', function (e) {
     var a = e.target.closest && e.target.closest('a[href^="#"]');
@@ -269,7 +286,7 @@
     var target = id === 'top' ? null : document.getElementById(id);
     if (id !== 'top' && !target) return;
     e.preventDefault();
-    glide(target ? layoutTop(target) : 0, 1.5);
+    glide(target ? layoutTop(target) : 0, 1.6, easeInOut);
     if (target) {
       target.setAttribute('tabindex', '-1');
       target.focus({ preventScroll: true });
@@ -277,38 +294,84 @@
     history.replaceState(null, '', '#' + id);
   });
 
-  /* 翻一整页。比一屏长的区段（飞轮）在内部先走完 */
+  /* 翻一整页。比一屏长的区段（飞轮）分步走完再离开 */
   function hopTo(from, dir) {
-    var st = m.stops, hop = m.vh * 0.88, i = 0, s;
+    var st = m.stops, last = st.length - 1, i = 0;
+    while (i < last && st[i + 1].a <= from + 2) i++;
+    var s = st[i], len = s.b - s.a;
+    var step = len > 2 ? len / Math.max(1, Math.round(len / (m.vh * 0.5))) : 0;
     if (dir > 0) {
-      while (i < st.length - 1 && st[i + 1].a <= from + 2) i++;
-      s = st[i];
-      if (s.b - s.a > m.vh && from < s.b - 2) return Math.min(from + hop, s.b);
-      return i < st.length - 1 ? st[i + 1].a : m.max;
+      if (step && from < s.b - 2) return Math.min(s.b, s.a + step * (Math.floor((from - s.a + 2) / step) + 1));
+      return i < last ? st[i + 1].a : m.max;
     }
-    while (i < st.length - 1 && st[i + 1].a < from - 2) i++;
-    s = st[i];
-    if (s.b - s.a > m.vh) return from > s.b + 2 ? s.b : Math.max(from - hop, s.a);
-    return s.a;
+    if (from > s.b + 2) return s.b;
+    if (step && from > s.a + 2) return Math.max(s.a, s.a + step * (Math.ceil((from - s.a - 2) / step) - 1));
+    return i > 0 ? st[i - 1].b : 0;
   }
 
-  /* 键盘翻页也走同一条平滑曲线 */
+  /* 一次手势只翻一页。手指滑动和松手后的惯性都算同一次手势，翻页途中收到的事件全部丢弃；
+     之后必须等事件真正停顿才算新手势。不看速度变化：惯性里的波动会被误判成又推了一下，连跳几页 */
+  var gest = { last: -1e9, dir: 0, sum: 0, fired: false, prev: 0, tail: false };
+
+  function onWheel(e) {
+    if (e.ctrlKey || nav.classList.contains('is-open')) return;
+    var unit = e.deltaMode === 1 ? 40 : e.deltaMode === 2 ? m.vh : 1;
+    var d = e.deltaY * unit, abs = Math.abs(d);
+    e.stopPropagation();
+    if (abs <= Math.abs(e.deltaX * unit)) return;
+    e.preventDefault();
+
+    var g = gest, now = e.timeStamp, gap = now - g.last, prev = g.prev, dir = d > 0 ? 1 : -1;
+    g.last = now;
+    g.prev = abs;
+    if (turning) {
+      g.tail = true;
+      return;
+    }
+    /* 鼠标滚轮一格一格转没有停顿，靠每格数值完全相同来认 */
+    var notch = abs >= 100 && abs === prev;
+    if (gap > 130 || notch) {
+      g.tail = false;
+      g.sum = 0;
+      g.fired = false;
+    } else if (g.tail || dir !== g.dir) {
+      return;
+    }
+    g.dir = dir;
+    g.sum += abs;
+    if (!g.fired && g.sum >= 10) {
+      g.fired = true;
+      turn(hopTo(lenis.animatedScroll, dir));
+    }
+  }
+
+  if (lenis && fine) window.addEventListener('wheel', onWheel, { passive: false, capture: true });
+
+  /* 键盘翻页也走同一条曲线 */
   document.addEventListener('keydown', function (e) {
     if (!lenis || e.altKey || e.ctrlKey || e.metaKey) return;
     var tag = e.target.tagName;
     if (e.key === ' ' && (tag === 'BUTTON' || tag === 'A')) return;
-    var from = lenis.targetScroll;
+    var from = lenis.animatedScroll;
     var to = null;
-    if (e.key === 'PageDown' || (e.key === ' ' && !e.shiftKey)) to = hopTo(from, 1);
-    else if (e.key === 'PageUp' || (e.key === ' ' && e.shiftKey)) to = hopTo(from, -1);
+    if (e.key === 'PageDown' || e.key === 'ArrowDown' || (e.key === ' ' && !e.shiftKey)) to = hopTo(from, 1);
+    else if (e.key === 'PageUp' || e.key === 'ArrowUp' || (e.key === ' ' && e.shiftKey)) to = hopTo(from, -1);
     else if (e.key === 'Home') to = 0;
     else if (e.key === 'End') to = m.max;
     if (to === null) return;
     e.preventDefault();
-    glide(to, 0.85);
+    if (!turning) turn(to);
   });
 
   /* ---------- 滚动联动 ---------- */
+
+  /* 省流量时只留封面 */
+  var films = [];
+  if (motion && !(navigator.connection && navigator.connection.saveData)) {
+    films = $$('.film video').map(function (v) {
+      return { v: v, pg: pages.filter(function (p) { return p.contains(v); })[0], on: false, loaded: false };
+    });
+  }
 
   var hero = $('.hero');
   var foot = $('.foot');
@@ -317,7 +380,8 @@
   var bar = $('.progress');
   var loop4 = $('.loop4');
   var loopItems = loop4 ? Array.prototype.slice.call(loop4.children) : [];
-  var pin = $('.pin');
+  var pin = $('#rsi');
+  var flyOn = false, flyAt = 0, flyP = 0, FLY = 3600;
   var steps = $$('.steps li');
   var nodes = $$('.nodes g');
   var r2 = $('.r2');
@@ -327,7 +391,7 @@
   var parallax = $$('.duo .mask img');
   var LABELS = ['AI 设计方案', '打分、留痕', '校准世界', '给自己造工具', '下一圈'];
 
-  var m = { vh: 1, vw: 1, max: 1, loop: 0, pin: 0, pinLen: 1, par: [], tops: [], ids: [], stops: [{ a: 0, b: 0 }] };
+  var m = { vh: 1, vw: 1, max: 1, loop: 0, pin: 0, par: [], tops: [], ids: [], stops: [{ a: 0, b: 0 }] };
   var lastY = -1;
   var lastStep = -1;
   var lastDir = 0;
@@ -393,7 +457,6 @@
     if (loop4) m.loop = layoutTop(loop4);
     if (pin) {
       m.pin = layoutTop(pin);
-      m.pinLen = Math.max(1, pin.offsetHeight - m.vh);
     }
     m.ids = links.map(function (a) {
       var sec = $(a.getAttribute('href'));
@@ -455,8 +518,8 @@
       if (key === 1) {
         /* 下一屏露头时上一屏先不动，留给还在读的人 */
         var e = ease(seg(k, 0.2, 1));
-        if (fine) pg.style.transform = 'scale(' + (1 - e * 0.04).toFixed(4) + ')';
-        pg.style.opacity = (1 - e * 0.5).toFixed(3);
+        if (fine) pg.style.transform = 'scale(' + (1 - e * 0.07).toFixed(4) + ')';
+        pg.style.opacity = (1 - e * 0.8).toFixed(3);
       }
       if (key === pg.__state) return;
       pg.__state = key;
@@ -464,6 +527,26 @@
       if (key === 0) {
         pg.style.transform = '';
         pg.style.opacity = '';
+      }
+    });
+
+    /* 短片：翻到这一页从头播，离开就停 */
+    films.forEach(function (f) {
+      var pg = f.pg, end = pg.__start !== undefined ? pg.__start : m.max;
+      if (!f.loaded && y > pg.__top - m.vh * 1.3) {
+        f.loaded = true;
+        f.v.preload = 'auto';
+        f.v.load();
+      }
+      var on = y > pg.__top - m.vh * 0.5 && y < end + m.vh * 0.5;
+      if (on === f.on) return;
+      f.on = on;
+      if (on) {
+        f.v.currentTime = 0;
+        var played = f.v.play();
+        if (played && played.catch) played.catch(function () {});
+      } else {
+        f.v.pause();
       }
     });
 
@@ -496,7 +579,7 @@
 
     /* 飞轮 */
     if (pin && desktop.matches) {
-      var fp = clamp((y - m.pin) / m.pinLen);
+      var fp = flyP;
       r2.style.setProperty('--o', (100 - fp * 100).toFixed(2));
       if (head) {
         var ang = fp * Math.PI * 2;
@@ -801,6 +884,31 @@
     $$('[data-live]').forEach(function (el) { live.observe(el); });
   }
 
+  /* ---------- 中英文切换：原地换文字，停在同一页 ---------- */
+
+  $$('[data-lang-switch]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      if (!I18N) return;
+      var y = lenis ? lenis.animatedScroll : window.scrollY, at = 0;
+      if (motion) m.stops.forEach(function (s, i) { if (s.a <= y + 2) at = i; });
+      I18N.set(I18N.lang === 'en' ? 'zh' : 'en');
+      if (motion) $$('.split').forEach(function (el) {
+        if (!el.hasAttribute('data-en')) return;
+        el.classList.remove('split');
+        split(el);
+      });
+      setMenu(nav.classList.contains('is-open'));
+      if (motion) {
+        measure();
+        var to = m.stops[at] ? m.stops[at].a : 0;
+        if (lenis) lenis.scrollTo(to, { immediate: true, force: true });
+        else window.scrollTo(0, to);
+      }
+      moveInd($('.nav a.is-here'));
+      if (ctx) resize();
+    });
+  });
+
   /* ---------- 主循环：滚动和画布共用一个 rAF ---------- */
 
   var timer;
@@ -815,15 +923,19 @@
         if (!motion) frame(0.8, 0);
       }
       if (motion) measure();
+      if (lenis && fine) {
+        snapDir = -1;
+        settled = false;
+      }
       moveInd($('.nav a.is-here'));
     }, 120);
   });
 
-  /* 不停在两页之间。看滚动目标而不是当前位置：松手后马上判断，不用等惯性走完；
-     朝滚动方向越过停留区就翻过去，否则退回 */
+  /* 滚轮和键盘已经整页走了；这里兜底拖滚动条、改窗口大小后停在两页之间的情况 */
   var snapT = 0, snapDir = 1, snapAt = 0, settled = true;
 
   function snap(now) {
+    if (turning) return;
     var t = lenis.targetScroll;
     if (Math.abs(t - snapT) > 0.5) {
       snapDir = t > snapT ? 1 : -1;
@@ -840,15 +952,27 @@
       if (t < st[i + 1].a - 1) {
         var k = (t - st[i].b) / (st[i + 1].a - st[i].b);
         var go = snapDir > 0 ? k > 0.015 : k > 0.985;
-        glide(go ? st[i + 1].a : st[i].b, 0.7, easeOut);
+        turn(go ? st[i + 1].a : st[i].b);
         return;
       }
     }
   }
 
   function tick(now) {
-    if (lenis) lenis.raf(now);
+    if (lenis) {
+      lenis.raf(now);
+      if (turning && now >= turnEnd) turning = false;
+    }
     var y = lenis ? lenis.animatedScroll : window.scrollY;
+    if (pin && motion) {
+      var inFly = y > m.pin - m.vh * 0.3 && y < m.pin + m.vh * 0.5;
+      if (inFly && !flyOn) flyAt = now;
+      flyOn = inFly;
+      if (flyOn && flyP !== clamp((now - flyAt) / FLY)) {
+        flyP = clamp((now - flyAt) / FLY);
+        dirty = true;
+      }
+    }
     update(y);
     if (lenis && fine) snap(now);
     if (ctx && y < m.vh && !document.hidden) drawHero(now);
