@@ -105,12 +105,14 @@
 
   /* ---------- 三维展示 ---------- */
 
-  var views = $$('[data-stage]');
+  var views = $$('[data-stage]'), showcase = null;
   (function () {
     var save = navigator.connection && navigator.connection.saveData;
     var gl = null;
     try { gl = !save && document.createElement('canvas').getContext('webgl2'); } catch (e) { gl = null; }
     if (!gl) { views = []; return; }
+    /* 典型产品的实时三维只在有动效时启用，否则保留静态图 */
+    if (motion) showcase = $('.show__stage');
     var lose = gl.getExtension('WEBGL_lose_context');
     if (lose) lose.loseContext();
     /* 在量页面高度之前放出来，否则翻页位置要多算一次 */
@@ -128,6 +130,9 @@
     s.onerror = fail;
     s.onload = function () {
       var idle = window.requestIdleCallback || function (f) { return setTimeout(f, 60); };
+      if (showcase) idle(function () {
+        try { window.EngStage.products(showcase, $$('.show__tab')); } catch (e) { showcase.classList.remove('is-3d'); }
+      });
       views.forEach(function (v, i) {
         idle(function () {
           try {
@@ -890,7 +895,9 @@
     var stage = $('.show__stage');
     if (!stage) return;
     var imgs = $$('.show__img', stage), tabs = $$('.show__tab');
-    var at = 0, timer = null, held = false, DWELL = 6000;
+    var at = 0, timer = null, held = false;
+    /* 三维版每款要合拢、拆开、摆动，停得久一些 */
+    function dwell() { return stage.classList.contains('is-3d') ? 11000 : 6000; }
     function go(i, timed) {
       at = (i + imgs.length) % imgs.length;
       imgs.forEach(function (im, k) { im.classList.toggle('is-on', k === at); });
@@ -899,7 +906,8 @@
         t.classList.remove('is-timed');
         t.setAttribute('aria-pressed', String(k === at));
       });
-      if (timed && motion) { void tabs[at].offsetWidth; tabs[at].classList.add('is-timed'); }
+      if (timed && motion) { tabs[at].style.setProperty('--dwell', dwell() + 'ms'); void tabs[at].offsetWidth; tabs[at].classList.add('is-timed'); }
+      stage.dispatchEvent(new CustomEvent('show:go', { detail: { i: at, timed: !!timed && motion, dwell: dwell() } }));
       /* 下一张提前解码 */
       var nx = imgs[(at + 1) % imgs.length];
       if (nx.loading === 'lazy') nx.loading = 'eager';
@@ -908,13 +916,19 @@
       clearTimeout(timer);
       if (held || !motion || !stage.classList.contains('is-live')) return;
       go(at, true);
-      timer = setTimeout(function () { go(at + 1, true); run(); }, DWELL);
+      timer = setTimeout(function () { go(at + 1, true); run(); }, dwell());
     }
     tabs.forEach(function (t, k) {
-      t.style.setProperty('--dwell', DWELL + 'ms');
       t.addEventListener('click', function () { held = true; clearTimeout(timer); go(k, false); });
     });
-    if (motion && 'MutationObserver' in window) new MutationObserver(run).observe(stage, { attributes: true, attributeFilter: ['class'] });
+    /* 只在进出视口时重启计时；is-3d 等其他类名变化不打断 */
+    var wasLive = false;
+    if (motion && 'MutationObserver' in window) new MutationObserver(function () {
+      var l = stage.classList.contains('is-live');
+      if (l !== wasLive) { wasLive = l; run(); }
+    }).observe(stage, { attributes: true, attributeFilter: ['class'] });
+    /* 三维就绪后从当前这款重新开始一轮 */
+    stage.addEventListener('show:ready', function () { if (!held) run(); });
   })();
 
   /* ---------- 中英文切换：原地换文字，停在同一页 ---------- */
@@ -1029,7 +1043,7 @@
     var idle = window.requestIdleCallback || function (f) { return setTimeout(f, 300); };
     idle(function () {
       $$('img[loading="lazy"]').forEach(function (img) { img.loading = 'eager'; });
-      if (views.length) mountViews();
+      if (views.length || showcase) mountViews();
     });
   });
 

@@ -350,3 +350,27 @@ html.motion .show__tab.is-on.is-timed::after { animation: show-bar var(--dwell, 
   .show__tab small { font-size: 11px; }
   .show__stage figcaption { font-size: 10px; right: 8px; bottom: 6px; }
 }
+
+/* 实时三维版：画布盖在静态图上，就绪后静态图退场 */
+.show__gl { position: absolute; inset: 0; width: 100%; height: 100%; display: block; border-radius: 6px; opacity: 0; transition: opacity .28s ease; touch-action: pan-y; cursor: grab; }
+.show__stage.is-3d { background: radial-gradient(ellipse 75% 70% at 50% 46%, #25282d 0%, #17191c 60%, #111214 100%); border-radius: 6px; box-shadow: 0 0 0 1px var(--line-ink); }
+.show__stage.is-3d .show__gl { opacity: 1; }
+.show__stage.is-3d .show__gl.is-out { opacity: 0; }
+.show__stage.is-3d .show__img { opacity: 0; transition: opacity .6s ease; }
+.show__stage.is-point .show__gl { cursor: pointer; }
+.show__stage.is-grab .show__gl { cursor: grabbing; }
+.show__tip {
+  position: absolute; left: 0; top: 0; z-index: 2; pointer-events: none; white-space: nowrap;
+  padding: 5px 10px; border-radius: 4px; font-size: 13px; line-height: 1.4; color: var(--on-ink);
+  background: rgba(17, 18, 20, .82); box-shadow: 0 0 0 1px rgba(232, 105, 43, .55); backdrop-filter: blur(6px);
+  opacity: 0; transition: opacity .18s ease;
+}
+.show__tip.is-on { opacity: 1; }
+.show__stage figcaption { z-index: 1; pointer-events: none; }
+.show__hint { display: none; position: absolute; left: 14px; bottom: 10px; z-index: 1; margin: 0; pointer-events: none; font-size: 12px; color: var(--on-ink-2); }
+.show__hint::before { content: ""; display: inline-block; width: 6px; height: 6px; margin-right: 8px; border-radius: 50%; background: var(--accent); vertical-align: 1px; animation: show-ping 2.4s ease-in-out infinite; }
+@keyframes show-ping { 0%, 100% { opacity: .35; } 50% { opacity: 1; } }
+.show__stage.is-3d .show__hint { display: block; }
+.show__hint--touch { display: none; }
+@media (hover: none), (pointer: coarse) { .show__hint--fine { display: none; } .show__hint--touch { display: inline; } }
+@media (max-width: 620px) { .show__hint { font-size: 10px; left: 8px; bottom: 6px; } }
