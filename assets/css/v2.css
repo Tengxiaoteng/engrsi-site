@@ -374,3 +374,118 @@ html.motion .show__tab.is-on.is-timed::after { animation: show-bar var(--dwell, 
 .show__hint--touch { display: none; }
 @media (hover: none), (pointer: coarse) { .show__hint--fine { display: none; } .show__hint--touch { display: inline; } }
 @media (max-width: 620px) { .show__hint { font-size: 10px; left: 8px; bottom: 6px; } }
+
+/* ================================================================
+   字体与留白（2026-11-03）：统一字号阶梯和间距，只作用于 ≥900px；
+   手机端沿用上面各段为一屏而收紧的尺寸。
+   阶梯：标签 13 / 说明 14 / 正文 15–17 / 小标题 18–21 / 章节标题 36–54
+   间距：标签→标题 --s1，标题→导语 --s2，页头→内容 --s3
+   ================================================================ */
+:root { --on-ink-2: #aeada6; --s1: clamp(18px, 3.2vh, 32px); --s2: clamp(14px, 2.4vh, 24px); --s3: clamp(34px, 6.4vh, 68px); }
+
+/* 章节标签：编号 + 细线 + 名称，字距放开 */
+.label { letter-spacing: .14em; font-size: 13px; }
+.label span { display: inline-flex; align-items: center; margin-right: 14px; letter-spacing: .04em; }
+.label span::after { content: ""; display: inline-block; width: 28px; height: 1px; margin-left: 14px; background: currentColor; opacity: .55; }
+html[lang="en"] .label { letter-spacing: .1em; text-transform: uppercase; font-size: 12px; }
+
+@media (min-width: 900px) {
+  body { letter-spacing: .02em; }
+  html[lang="en"] body { letter-spacing: .005em; }
+
+  /* 顶栏 */
+  .nav { font-size: 14px; letter-spacing: .08em; gap: clamp(22px, 2.8vw, 44px); }
+  html[lang="en"] .nav { letter-spacing: .03em; }
+
+  /* 首页 */
+  .hero__eyebrow { font-size: 12px; letter-spacing: .32em; }
+  .hero h1 { letter-spacing: .04em; line-height: 1.38; }
+  .hero__foot { margin-top: clamp(28px, 5vh, 56px); }
+  .hero__lead { font-weight: 300; letter-spacing: .18em; }
+
+  /* 通用页头 */
+  :is(.duplex, .record__head, .biz__head, .areas__head, .show__head, .clients__head) .label { margin-bottom: var(--s1) !important; }
+  h2 { letter-spacing: .03em; line-height: 1.32; }
+  html[lang="en"] h2 { letter-spacing: 0; }
+  .lede { font-weight: 300; line-height: 1.95; letter-spacing: .04em; max-width: 36em; }
+  html[lang="en"] .lede { letter-spacing: .005em; line-height: 1.75; }
+  .duplex .lede, .biz__head .lede { margin-top: var(--s2); font-size: clamp(15px, 1.15vw, 17px); }
+
+  /* 关于我们 */
+  #about .duplex { gap: 24px clamp(48px, 6vw, 112px); }
+  .awards { margin-top: var(--s3); }
+  .awards li { padding-top: clamp(13px, 2.3vh, 21px); padding-bottom: clamp(13px, 2.3vh, 21px); letter-spacing: .04em; font-size: clamp(15px, 1.15vw, 17px); }
+
+  /* 成果 */
+  .record { gap: var(--s3); }
+  .record__head h2 { font-size: clamp(32px, 3.1vw, 50px); }
+  .record__head .lede { margin-top: var(--s2); max-width: 54em; font-size: clamp(14.5px, 1.05vw, 16px); line-height: 2.05; }
+  .figures li { padding-top: clamp(16px, 3vh, 30px) !important; padding-bottom: clamp(16px, 3vh, 30px) !important; }
+  .figures__big b { font-size: clamp(40px, min(5.4vw, 9.6vh), 90px) !important; }
+  .figures b { font-size: clamp(32px, min(3.2vw, 6.2vh), 52px) !important; letter-spacing: .01em; }
+  .figures span { display: block; margin-top: 8px; font-size: 13.5px !important; letter-spacing: .08em; color: var(--on-ink-2); }
+  .figures i { font-size: .32em; letter-spacing: .06em; }
+
+  /* 业务范围 */
+  .biz, .areas, .clients { gap: var(--s3); }
+  .show { gap: var(--s3); }
+  .biz__list { border-top-color: rgba(237, 233, 225, .1); }
+  .biz__list > li { padding: clamp(22px, 3.8vh, 38px) clamp(18px, 1.8vw, 32px) clamp(22px, 3.8vh, 38px); border-right-color: rgba(237, 233, 225, .08); }
+  .biz__list h3 { margin-top: 14px; letter-spacing: .04em; }
+  .biz__list ul { margin-top: clamp(14px, 2.6vh, 24px); gap: clamp(9px, 1.7vh, 15px); }
+  .biz__list ul li { font-weight: 300; font-size: clamp(13.5px, .98vw, 15px); letter-spacing: .01em; padding-left: 16px; text-wrap: pretty; }
+  .biz__head .lede { max-width: 48em; }
+  html[lang="en"] .biz__list ul li { letter-spacing: 0; }
+
+  /* 十二个领域：去掉表格线，每格只留顶部细线，格间留空 */
+  .areas__grid { gap: clamp(10px, 2vh, 22px) clamp(16px, 1.7vw, 30px); background: none; border: 0; }
+  .areas__grid > li { background: none; padding: clamp(14px, 2.4vh, 24px) 0 0; border-top: 1px solid var(--line-ink); transition: border-color .45s; }
+  .areas__grid > li:hover { background: none; border-top-color: var(--accent); }
+  .areas__grid svg { max-height: clamp(54px, 13vh, 118px); margin-bottom: clamp(10px, 2vh, 18px); }
+  .areas__grid h3 { margin-top: 6px; letter-spacing: .02em; text-wrap: balance; }
+  html[lang="en"] .areas__grid h3 { letter-spacing: 0; }
+
+  /* 典型产品 */
+  .show__tab { padding-top: clamp(10px, 1.7vh, 16px) !important; padding-bottom: clamp(10px, 1.7vh, 16px) !important; }
+  .show__stage { max-height: calc(100vh - 2 * var(--pad) - 190px); }
+  @supports (aspect-ratio: 1) { .show__stage { width: min(calc(100vw - 2 * var(--gutter) - clamp(220px, 21vw, 320px) - 40px), calc((100vh - 2 * var(--pad) - 190px) * 1.6), 1040px); } }
+  .show__tab b { letter-spacing: .04em; font-size: clamp(15px, 1.15vw, 18px); }
+  .show__tab small { font-size: 12.5px; letter-spacing: .06em; }
+  html[lang="en"] .show__tab b, html[lang="en"] .show__tab small { letter-spacing: 0; }
+
+  /* 服务单位：卡片稍小，间距放大 */
+  .clients__grid { gap: clamp(22px, 4.4vh, 44px) clamp(18px, 2vw, 34px); }
+  .clients__logo { height: clamp(72px, 13.5vh, 128px); padding: clamp(14px, 2.4vh, 24px) clamp(16px, 1.6vw, 28px); }
+  .clients__grid > li { gap: 12px; }
+  .clients__grid > li > span:last-child { font-size: 13px; letter-spacing: .04em; }
+  html[lang="en"] .clients__grid > li > span:last-child { letter-spacing: 0; }
+
+  /* 商务合作 */
+  .contact .duplex { gap: 24px clamp(56px, 7vw, 128px); }
+  .contact__grid { margin-top: var(--s3) !important; }
+  .contact .k { font-size: 13px; letter-spacing: .12em; }
+  .contact .phone { font-weight: 300; letter-spacing: .02em; }
+  .contact address { letter-spacing: .04em; }
+  .flow .label { margin-bottom: clamp(16px, 2.8vh, 28px); }
+  .flow__list > li { padding: clamp(7px, 1.3vh, 13px) 0; column-gap: 22px; }
+  .flow__list span { text-wrap: pretty; }
+  .flow__list b { letter-spacing: .06em; font-size: clamp(16px, 1.2vw, 18px); }
+  .flow__list span { font-weight: 300; font-size: clamp(13px, .95vw, 14px); letter-spacing: .03em; }
+  html[lang="en"] .flow__list b, html[lang="en"] .flow__list span { letter-spacing: 0; }
+}
+/* 矮屏（笔记本 680–800 高）：间距按比例收，不让页面整体缩小 */
+@media (min-width: 900px) and (max-height: 800px) {
+  :root { --s1: 14px; --s2: 12px; --s3: 26px; }
+  .show__tab { padding-top: 7px !important; padding-bottom: 7px !important; }
+  .flow__list > li { padding: 5px 0; }
+  .flow .label { margin-bottom: 10px; }
+}
+/* 英文：词本身有间隔，不再加字距；标题更长，字号收一档 */
+@media (min-width: 900px) {
+  html[lang="en"] :is(.biz__list h3, .awards li, .contact .k, .contact address, .figures span, .hero__lead, .nav) { letter-spacing: 0; }
+  html[lang="en"] :is(.show__head, .biz__head, .areas__head, .clients__head, .record__head) h2 { font-size: clamp(28px, 2.6vw, 44px); }
+  html[lang="en"] .biz__list > li { padding-top: clamp(16px, 2.8vh, 30px); padding-bottom: clamp(16px, 2.8vh, 30px); }
+  html[lang="en"] .biz__list ul { margin-top: clamp(10px, 2vh, 18px); gap: clamp(7px, 1.3vh, 12px); }
+  html[lang="en"] .biz__list ul li { line-height: 1.45; }
+  html[lang="en"] .hero__lead { letter-spacing: .04em; }
+}
