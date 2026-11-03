@@ -118,18 +118,46 @@
     areas3d = $('.areas__grid');
   })();
 
+  /* 背景三维分析层：条件同上（桌面、有动效、有 WebGL2、不省流量）。先挂好空层并切到毛玻璃样式，脚本到了再开始画 */
+  var bdHost = null;
+  if (areas3d) {
+    bdHost = document.createElement('div');
+    bdHost.className = 'bd';
+    bdHost.setAttribute('aria-hidden', 'true');
+    bdHost.innerHTML = '<canvas class="bd__gl"></canvas><canvas class="bd__hud"></canvas>';
+    document.body.insertBefore(bdHost, document.body.firstChild);
+    root.classList.add('glass');
+  }
+  /* 首页叶片在背景层里画；脚本没到或失败就退回 2D 首屏 */
+  function dropBackdrop() {
+    if (!bdHost) return;
+    root.classList.remove('glass');
+    bdHost.remove();
+    bdHost = null;
+    /* 2D 首屏之前是隐藏的，尺寸要重新量 */
+    if (ctx) resize();
+  }
+
+  var mounted = false;
   function mountViews() {
+    if (mounted) return;
+    mounted = true;
     var s = document.createElement('script');
     s.src = 'assets/js/stage.min.js';
     s.async = true;
     s.onload = function () {
       var idle = window.requestIdleCallback || function (f) { return setTimeout(f, 60); };
+      /* 背景（含首页叶片）先起，十二格空闲时再建 */
+      if (bdHost) { try { window.EngStage.backdrop(bdHost); } catch (e) { dropBackdrop(); } }
       idle(function () {
         try { window.EngStage.fields(areas3d); } catch (e) { areas3d.classList.remove('is-3d'); }
       });
     };
+    s.onerror = dropBackdrop;
     document.head.appendChild(s);
   }
+  /* 毛玻璃版首页叶片也在这个脚本里，不等 load 就取 */
+  if (bdHost) mountViews();
 
   /* ---------- 翻页结构 ---------- */
 
@@ -504,9 +532,10 @@
 
       if (key === 1) {
         /* 下一屏露头时上一屏先不动，留给还在读的人 */
-        var e = ease(seg(k, 0.2, 1));
+        var e = bdHost ? ease(seg(k, 0.05, 0.62)) : ease(seg(k, 0.2, 1));
         if (fine) pg.style.transform = 'scale(' + (1 - e * 0.07).toFixed(4) + ')';
-        pg.style.opacity = (1 - e * 0.8).toFixed(3);
+        /* 毛玻璃版页面是透明的，上一屏要完全淡出，否则两页的字叠在一起 */
+        pg.style.opacity = (1 - e * (bdHost ? 1 : 0.8)).toFixed(3);
       }
       if (key === pg.__state) return;
       pg.__state = key;
@@ -612,165 +641,266 @@
 
   var ctx = canvas && canvas.getContext('2d');
 
-  /* 生成式设计示意：一整块设计域划成单元，按“受力贡献”打分，低分单元一批批被淘汰，
-     最后剩下沿受力路径的轻量化悬臂支架，再沿路径走光流。坐标以设计域宽为 1，y 向下。 */
-  var CYCLE = 16000;
-  var FLOW = 150;
-  var DH = 0.62;
-  var SUP = [[0.05, 0.1], [0.05, 0.52]], LOAD = [0.95, 0.31];
-
-  function cub(p, t) {
-    var u = 1 - t;
-    return [
-      u * u * u * p[0] + 3 * u * u * t * p[2] + 3 * u * t * t * p[4] + t * t * t * p[6],
-      u * u * u * p[1] + 3 * u * u * t * p[3] + 3 * u * t * t * p[5] + t * t * t * p[7]
-    ];
-  }
-  var TOP = [0.05, 0.1, 0.36, 0.13, 0.7, 0.2, 0.95, 0.31];
-  var BOT = [0.05, 0.52, 0.36, 0.5, 0.7, 0.42, 0.95, 0.31];
-  function line(a, b) { return [a[0], a[1], a[0] + (b[0] - a[0]) / 3, a[1] + (b[1] - a[1]) / 3, a[0] + (b[0] - a[0]) * 2 / 3, a[1] + (b[1] - a[1]) * 2 / 3, b[0], b[1]]; }
-  /* 杆件：三次曲线控制点 + 两端半径；光流从受载端流向固定端 */
-  var MEMBERS = [
-    { c: TOP, r: [0.036, 0.02] },
-    { c: BOT, r: [0.04, 0.02] },
-    { c: line(SUP[0], SUP[1]), r: [0.02, 0.02] },
-    { c: line(SUP[0], cub(BOT, 0.24)), r: [0.017, 0.012] },
-    { c: line(SUP[1], cub(TOP, 0.26)), r: [0.017, 0.012] },
-    { c: line(cub(TOP, 0.26), cub(BOT, 0.46)), r: [0.012, 0.012] },
-    { c: line(cub(BOT, 0.24), cub(TOP, 0.5)), r: [0.012, 0.011] },
-    { c: line(cub(TOP, 0.5), cub(BOT, 0.68)), r: [0.011, 0.01] },
-    { c: line(cub(BOT, 0.46), cub(TOP, 0.72)), r: [0.011, 0.01] },
-    { c: line(cub(TOP, 0.72), cub(BOT, 0.86)), r: [0.01, 0.009] },
-    { c: line(cub(BOT, 0.68), cub(TOP, 0.88)), r: [0.01, 0.009] }
+  /* 示意：上百条候选叶型细线收敛成一片高负荷涡轮叶片截面，随后长出当今最先进的内部冷却结构——
+     双层壁（外蒙皮 + 微通道 + 内壁，扰流柱支撑）、冲击冷却腔、前缘簇射孔与两侧成形气膜孔、
+     尾缘扰流柱与压力面劈缝；最后走外部燃气、贴壁气膜和劈缝冷气。坐标以弦向约为 1，y 向上。 */
+  var COUNT = 120, SAMPLES = 64, CYCLE = 18000, FLOW = 110, FILM = 110;
+  var TARGET = [0.34, 0.2, 0.8, -0.12, -0.8, 0.19];
+  var SK = 0.013, GP = 0.011, IW = 0.015, IN = SK + GP, CAV = IN + IW;
+  var WALL = [0.03, 0.745];
+  var CAVS = [[0.045, 0.15], [0.19, 0.36], [0.4, 0.56], [0.6, 0.725]];
+  var TE = [0.77, 0.975], CUT = 0.9, SK2 = 0.011;
+  /* 气膜孔：[所在面 +1 吸力面 / -1 压力面 / 0 前缘鼻点, 起点 s, 起点内缩, 出口 s] */
+  var HOLES = [
+    [0, 0.06, 0, 0], [1, 0.055, CAV + 0.006, 0.014], [-1, 0.055, CAV + 0.006, 0.014],
+    [1, 0.11, IN - GP / 2, 0.15], [1, 0.3, IN - GP / 2, 0.34], [1, 0.5, IN - GP / 2, 0.54],
+    [-1, 0.09, IN - GP / 2, 0.13], [-1, 0.25, IN - GP / 2, 0.29], [-1, 0.45, IN - GP / 2, 0.49], [-1, 0.64, IN - GP / 2, 0.68]
   ];
-  var BOSS = [{ p: SUP[0], r: 0.052, h: 0.024 }, { p: SUP[1], r: 0.052, h: 0.024 }, { p: LOAD, r: 0.046, h: 0.021 }];
-  MEMBERS.forEach(function (m) {
-    m.pts = [];
-    for (var i = 0; i <= 24; i++) m.pts.push(cub(m.c, i / 24));
+  /* 冲击孔：从冷却腔穿过内壁打到外蒙皮内侧 */
+  var JETS = [];
+  CAVS.forEach(function (c, i) {
+    var n = i ? 3 : 2;
+    for (var k = 0; k < n; k++) {
+      var s = c[0] + (c[1] - c[0]) * (k + 0.5) / n;
+      JETS.push([1, s], [-1, s + (c[1] - c[0]) * 0.12 / n]);
+    }
   });
+  var PEDS = [], PINS = [];
+  for (var ps = 0.05; ps < 0.73; ps += 0.034) PEDS.push([1, ps], [-1, ps + 0.017]);
+  for (var pr = 0; pr < 5; pr++) {
+    var row = pr % 2 ? [-0.45, 0.45] : [-0.72, 0, 0.72];
+    row.forEach(function (f) { PINS.push([0.79 + pr * 0.024, f]); });
+  }
+  var HEAT = [
+    [0, '#fff0c2'], [0.1, '#fbb643'], [0.26, '#ea6a32'], [0.5, '#b8374f'],
+    [0.72, '#e2622f'], [0.9, '#f9a93a'], [1, '#fff1c4']
+  ];
 
-  var W = 0, H = 0, dpr = 1, scale = 1, ox = 0, oy = 0, cell = 7;
-  var cells = [], flow = [], clock = 0, lastT = 0, total = 1, kept = 1;
+  var W = 0, H = 0, dpr = 1, scale = 1, ox = 0, oy = 0, read = [0, 0];
+  var pop = [], flow = [], film = [], clock = 0, lastT = 0;
   var cache = null;
   var mx = 0, my = 0, px = 0, py = 0;
 
   function rand(a, b) { return a + Math.random() * (b - a); }
   function X(v) { return ox + v * scale; }
-  function Y(v) { return oy + v * scale; }
+  function Y(v) { return oy - v * scale; }
 
-  function distSeg(x, y, a, b) {
-    var dx = b[0] - a[0], dy = b[1] - a[1], l = dx * dx + dy * dy;
-    var t = l ? clamp(((x - a[0]) * dx + (y - a[1]) * dy) / l) : 0;
-    return [Math.hypot(x - a[0] - dx * t, y - a[1] - dy * t), t];
+  function bez(p0, p1, p2, p3, t) {
+    var u = 1 - t;
+    return u * u * u * p0 + 3 * u * u * t * p1 + 3 * u * t * t * p2 + t * t * t * p3;
   }
-  /* 某点在最终结构里的“密度”：0 空，1 实 */
-  function density(x, y) {
-    var d = 0, i, j, m, s, r, hole = false;
-    for (i = 0; i < BOSS.length; i++) {
-      var q = Math.hypot(x - BOSS[i].p[0], y - BOSS[i].p[1]);
-      if (q < BOSS[i].h) hole = true;
-      if (q < BOSS[i].r) d = 1;
-    }
-    if (hole) return 0;
-    for (i = 0; i < MEMBERS.length && d < 1; i++) {
-      m = MEMBERS[i];
-      for (j = 0; j < m.pts.length - 1; j++) {
-        s = distSeg(x, y, m.pts[j], m.pts[j + 1]);
-        r = m.r[0] + (m.r[1] - m.r[0]) * (j + s[1]) / (m.pts.length - 1);
-        d = Math.max(d, clamp((r + 0.006 - s[0]) / 0.012));
-      }
-    }
-    return d;
+  function dbez(p0, p1, p2, p3, t) {
+    var u = 1 - t;
+    return 3 * u * u * (p1 - p0) + 6 * u * t * (p2 - p1) + 3 * t * t * (p3 - p2);
   }
+  function centre(g, s) {
+    var x = bez(0, g[0], g[2], 1, s), y = bez(0, g[1], g[3], g[4], s);
+    var dx = dbez(0, g[0], g[2], 1, s), dy = dbez(0, g[1], g[3], g[4], s);
+    var len = Math.hypot(dx, dy) || 1;
+    return { x: x, y: y, nx: -dy / len, ny: dx / len, tx: dx / len, ty: dy / len };
+  }
+  /* 半厚度：圆钝前缘、最大厚度靠前、尾缘留一点钝度 */
+  function half(g, s) {
+    s = clamp(s);
+    var f = 0.2969 * Math.sqrt(s) - 0.126 * s - 0.3516 * s * s + 0.2843 * s * s * s - 0.1036 * s * s * s * s;
+    return g[5] * Math.max(0, f) / 0.1001 + 0.009 * s;
+  }
+  /* 截面上的点：side +1 吸力面、-1 压力面、0 中弧线；k 为从表面向内缩的距离 */
+  function P(s, side, k) {
+    var c = centre(TARGET, s);
+    if (!side) return [c.x, c.y];
+    var d = side * (half(TARGET, s) - k);
+    return [c.x + c.nx * d, c.y + c.ny * d];
+  }
+  function sAt(i, n) { var u = i / n; return 1 - Math.cos(u * Math.PI / 2); }
+
+  function trace(c, g) {
+    var i, s, p, t, up = [], lo = [];
+    for (i = 0; i <= SAMPLES; i++) {
+      s = sAt(i, SAMPLES);
+      p = centre(g, s);
+      t = half(g, s);
+      up.push(X(p.x + p.nx * t), Y(p.y + p.ny * t));
+      lo.push(X(p.x - p.nx * t), Y(p.y - p.ny * t));
+    }
+    c.beginPath();
+    c.moveTo(up[0], up[1]);
+    for (i = 2; i < up.length; i += 2) c.lineTo(up[i], up[i + 1]);
+    for (i = lo.length - 2; i >= 0; i -= 2) c.lineTo(lo[i], lo[i + 1]);
+    c.closePath();
+  }
+  /* a..b 之间、向内缩 kU（吸力面）/ kL（压力面，可随 s 变）的区域 */
+  function region(c, a, b, kU, kL, upTo) {
+    var n = Math.max(6, Math.round((b - a) * 70)), i, s, q;
+    upTo = upTo === undefined ? 1 : upTo;
+    var bb = a + (b - a) * upTo;
+    c.beginPath();
+    for (i = 0; i <= n; i++) { s = a + (bb - a) * i / n; q = P(s, 1, kU); c[i ? 'lineTo' : 'moveTo'](X(q[0]), Y(q[1])); }
+    for (i = n; i >= 0; i--) { s = a + (bb - a) * i / n; q = P(s, -1, typeof kL === 'function' ? kL(s) : kL); c.lineTo(X(q[0]), Y(q[1])); }
+    c.closePath();
+  }
+  function dot(c, q, r) { c.moveTo(X(q[0]) + r, Y(q[1])); c.arc(X(q[0]), Y(q[1]), r, 0, Math.PI * 2); }
+  function pinAt(p) {
+    var a = P(p[0], 1, SK2 + 0.006), b = P(p[0], -1, SK2 + 0.006), f = (p[1] + 1) / 2;
+    return [b[0] + (a[0] - b[0]) * f, b[1] + (a[1] - b[1]) * f];
+  }
+  function holeEnds(h) {
+    return h[0] ? [P(h[1], h[0], h[2]), P(h[3], h[0], 0)] : [P(h[1], 0, 0), P(0, 0, 0)];
+  }
+  function teLower(s) { return s > CUT ? -0.002 : SK2; }
 
   function seed() {
-    cells = [];
-    var cols = Math.round(scale / cell), rows = Math.round(DH * scale / cell), i, j, u = 1 / cols;
-    kept = 0;
-    for (j = 0; j < rows; j++) for (i = 0; i < cols; i++) {
-      var x = (i + 0.5) * u, y = (j + 0.5) * u, d = density(x, y);
-      /* 打分：越靠近受力路径分越高；实体单元永不淘汰 */
-      var key = d > 0.5 ? 2 : d * 0.55 + Math.random() * 0.45;
-      cells.push({ x: i * u, y: j * u, d: d, key: key });
-      if (d > 0.5) kept++;
+    pop = [];
+    for (var i = 0; i < COUNT; i++) {
+      pop.push({
+        g: [
+          TARGET[0] + rand(-0.2, 0.24), TARGET[1] + rand(-0.24, 0.28),
+          TARGET[2] + rand(-0.26, 0.2), TARGET[3] + rand(-0.32, 0.34),
+          TARGET[4] + rand(-0.24, 0.4), TARGET[5] * rand(0.5, 1.35)
+        ],
+        rate: rand(0.7, 1.15),
+        die: i < 10 ? 2 : rand(0.08, 0.46)
+      });
     }
-    total = cells.length;
-    kept /= total;
   }
 
   function spawn(p, anywhere) {
-    p.m = MEMBERS[Math.floor(Math.random() * MEMBERS.length)];
-    p.s = anywhere ? Math.random() : 1;
-    p.v = rand(0.00012, 0.00026);
-    p.o = rand(-0.7, 0.7);
-    p.a = rand(0.25, 0.75);
-    p.len = rand(0.04, 0.1);
+    var side = Math.random() < 0.5 ? -1 : 1;
+    p.s = anywhere ? rand(-0.32, 1.28) : rand(-0.42, -0.28);
+    p.d = side * (0.2 + Math.pow(Math.random(), 1.5) * (side > 0 ? 0.48 : 0.3));
+    p.v = rand(0.00011, 0.00022);
+    p.a = rand(0.16, 0.5);
+    p.len = rand(0.018, 0.05);
     p.life = 0;
   }
   function seedFlow() {
     flow = [];
     for (var i = 0; i < FLOW; i++) { var p = {}; spawn(p, true); flow.push(p); }
   }
-  function along(m, s) {
-    var k = clamp(s) * (m.pts.length - 1), j = Math.min(m.pts.length - 2, Math.floor(k)), f = k - j;
-    var a = m.pts[j], b = m.pts[j + 1], dx = b[0] - a[0], dy = b[1] - a[1], l = Math.hypot(dx, dy) || 1;
-    var r = m.r[0] + (m.r[1] - m.r[0]) * clamp(s);
-    return { x: a[0] + dx * f, y: a[1] + dy * f, nx: -dy / l, ny: dx / l, r: r };
+  /* 冷气粒子：从气膜孔出口贴着表面往下游走；h < 0 表示尾缘劈缝 */
+  function spawnFilm(p, anywhere) {
+    p.h = Math.random() < 0.22 ? -1 : Math.floor(Math.random() * HOLES.length);
+    p.u = anywhere ? Math.random() : 0;
+    p.v = rand(0.00028, 0.0005);
+    p.o = rand(0.002, 0.014);
+    p.a = rand(0.35, 0.85);
+    p.len = rand(0.08, 0.18);
+    p.side = Math.random() < 0.5 ? -1 : 1;
+  }
+  function seedFilm() {
+    film = [];
+    for (var i = 0; i < FILM; i++) { var p = {}; spawnFilm(p, true); film.push(p); }
+  }
+  function filmPos(p, u) {
+    var s, side, c, h, d;
+    if (p.h < 0) {
+      s = CUT + u * 0.42;
+      c = centre(TARGET, s);
+      h = s < 1 ? half(TARGET, s) : half(TARGET, 1) * Math.max(0, 1 - (s - 1) / 0.12);
+      d = -(h * (1 - u * 0.6) + p.o * 0.4);
+      return [c.x + c.nx * d, c.y + c.ny * d];
+    }
+    var hl = HOLES[p.h];
+    side = hl[0] || p.side;
+    s = (hl[0] ? hl[3] : 0.004) + u * 0.32;
+    if (s > 0.985) return null;
+    c = centre(TARGET, s);
+    d = side * (half(TARGET, s) + p.o * (0.4 + u));
+    return [c.x + c.nx * d, c.y + c.ny * d];
   }
 
-  /* 收敛后的光滑结构只画一次 */
+  /* 成品截面只画一次，之后贴图 */
   function buildCache() {
     var off = document.createElement('canvas');
     off.width = Math.max(1, Math.round(W * dpr));
     off.height = Math.max(1, Math.round(H * dpr));
     var c = off.getContext('2d');
     c.setTransform(dpr, 0, 0, dpr, 0, 0);
-    function shape(ctx2) {
-      ctx2.lineCap = 'round';
-      ctx2.lineJoin = 'round';
-      MEMBERS.forEach(function (m) {
-        for (var j = 0; j < m.pts.length - 1; j++) {
-          var r = m.r[0] + (m.r[1] - m.r[0]) * (j + 0.5) / (m.pts.length - 1);
-          ctx2.lineWidth = r * 2 * scale;
-          ctx2.beginPath();
-          ctx2.moveTo(X(m.pts[j][0]), Y(m.pts[j][1]));
-          ctx2.lineTo(X(m.pts[j + 1][0]), Y(m.pts[j + 1][1]));
-          ctx2.stroke();
-        }
-      });
-      BOSS.forEach(function (b) { ctx2.beginPath(); ctx2.arc(X(b.p[0]), Y(b.p[1]), b.r * scale, 0, Math.PI * 2); ctx2.fill(); });
-    }
-    /* 底层橙色光晕 */
+    var a = centre(TARGET, 0), b = centre(TARGET, 1);
+    var heat = c.createLinearGradient(X(a.x), Y(a.y), X(b.x), Y(b.y));
+    HEAT.forEach(function (st) { heat.addColorStop(st[0], st[1]); });
+    var cool = c.createLinearGradient(X(a.x), Y(a.y), X(b.x), Y(b.y));
+    cool.addColorStop(0, '#7a2a3f'); cool.addColorStop(0.45, '#4a1830'); cool.addColorStop(1, '#8c3a2c');
+    var r;
+
     c.save();
-    c.shadowColor = 'rgba(232,105,43,.45)';
-    c.shadowBlur = scale * 0.05 * dpr;
-    c.strokeStyle = c.fillStyle = 'rgba(232,105,43,.35)';
-    shape(c);
+    c.shadowColor = 'rgba(232,105,43,.5)';
+    c.shadowBlur = scale * 0.12 * dpr;
+    trace(c, TARGET);
+    c.fillStyle = heat;
+    c.fill();
     c.restore();
-    /* 金属质感：上亮下暗，受载端偏暖 */
-    var m2 = document.createElement('canvas');
-    m2.width = off.width; m2.height = off.height;
-    var k = m2.getContext('2d');
-    k.setTransform(dpr, 0, 0, dpr, 0, 0);
-    k.strokeStyle = k.fillStyle = '#fff';
-    shape(k);
-    k.globalCompositeOperation = 'source-in';
-    var g = k.createLinearGradient(X(0), Y(0), X(0.4), Y(DH));
-    g.addColorStop(0, '#cfcac1'); g.addColorStop(0.5, '#9a968f'); g.addColorStop(1, '#5d5a56');
-    k.fillStyle = g;
-    k.fillRect(0, 0, W, H);
-    var w = k.createRadialGradient(X(LOAD[0]), Y(LOAD[1]), 0, X(LOAD[0]), Y(LOAD[1]), scale * 0.45);
-    w.addColorStop(0, 'rgba(240,130,70,.75)'); w.addColorStop(1, 'rgba(240,130,70,0)');
-    k.globalCompositeOperation = 'source-atop';
-    k.fillStyle = w;
-    k.fillRect(0, 0, W, H);
-    k.globalCompositeOperation = 'destination-out';
-    BOSS.forEach(function (b) { k.beginPath(); k.arc(X(b.p[0]), Y(b.p[1]), b.h * scale, 0, Math.PI * 2); k.fill(); });
-    c.drawImage(m2, 0, 0, W, H);
-    /* 孔边一圈细高光 */
-    c.strokeStyle = 'rgba(255,255,255,.35)';
+    c.save();
+    trace(c, TARGET);
+    c.clip();
+
+    /* 双层壁：外蒙皮下的微通道 → 内壁（偏冷） */
+    region(c, WALL[0], WALL[1], SK, SK);
+    c.fillStyle = '#0d0918';
+    c.fill();
+    region(c, WALL[0], WALL[1], IN, IN);
+    c.fillStyle = cool;
+    c.fill();
+    /* 扰流柱：把外蒙皮和内壁连起来 */
+    c.fillStyle = '#a8423a';
+    c.beginPath();
+    r = Math.max(1.2, GP * 0.42 * scale);
+    PEDS.forEach(function (q) { dot(c, P(q[1], q[0], SK + GP / 2), r); });
+    c.fill();
+    /* 冷却腔 */
+    CAVS.forEach(function (cv) {
+      region(c, cv[0], cv[1], CAV, CAV);
+      c.fillStyle = '#07050c';
+      c.fill();
+      var m = P((cv[0] + cv[1]) / 2, 0, 0);
+      var g = c.createRadialGradient(X(m[0]), Y(m[1]), 0, X(m[0]), Y(m[1]), scale * 0.09);
+      g.addColorStop(0, 'rgba(120,170,255,.16)'); g.addColorStop(1, 'rgba(120,170,255,0)');
+      c.fillStyle = g;
+      c.fill();
+    });
+    /* 冲击孔 */
+    c.strokeStyle = '#07050c';
+    c.lineWidth = Math.max(1, scale * 0.0045);
+    c.beginPath();
+    JETS.forEach(function (j) { var p0 = P(j[1], j[0], CAV), p1 = P(j[1], j[0], SK); c.moveTo(X(p0[0]), Y(p0[1])); c.lineTo(X(p1[0]), Y(p1[1])); });
+    c.stroke();
+    /* 尾缘通道 + 压力面劈缝 + 扰流柱 */
+    region(c, TE[0], TE[1], SK2, teLower);
+    c.fillStyle = '#0a0712';
+    c.fill();
+    c.fillStyle = '#d4583f';
+    c.beginPath();
+    r = Math.max(1.2, scale * 0.0062);
+    PINS.forEach(function (p) { dot(c, pinAt(p), r); });
+    c.fill();
+    /* 气膜孔：斜穿外蒙皮，出口扩张成扇形 */
+    c.fillStyle = '#0a0612';
+    HOLES.forEach(function (h) {
+      var e = holeEnds(h), p0 = e[0], p1 = e[1];
+      var dx = p1[0] - p0[0], dy = p1[1] - p0[1], l = Math.hypot(dx, dy) || 1;
+      var nx = -dy / l, ny = dx / l, w0 = 0.0028, w1 = h[0] ? 0.0085 : 0.004;
+      var m = [p0[0] + dx * 0.55, p0[1] + dy * 0.55];
+      c.beginPath();
+      c.moveTo(X(p0[0] + nx * w0), Y(p0[1] + ny * w0));
+      c.lineTo(X(m[0] + nx * w0), Y(m[1] + ny * w0));
+      c.lineTo(X(p1[0] + nx * w1 + dx * 0.1), Y(p1[1] + ny * w1 + dy * 0.1));
+      c.lineTo(X(p1[0] - nx * w1 + dx * 0.1), Y(p1[1] - ny * w1 + dy * 0.1));
+      c.lineTo(X(m[0] - nx * w0), Y(m[1] - ny * w0));
+      c.lineTo(X(p0[0] - nx * w0), Y(p0[1] - ny * w0));
+      c.closePath();
+      c.fill();
+    });
+    /* 热障涂层：外表面一层浅色陶瓷 */
+    trace(c, TARGET);
+    c.strokeStyle = 'rgba(246,236,220,.55)';
+    c.lineWidth = Math.max(1.5, scale * 0.009);
+    c.stroke();
+    c.restore();
+    /* 外轮廓细高光 */
+    trace(c, TARGET);
+    c.strokeStyle = 'rgba(255,236,210,.35)';
     c.lineWidth = 1;
-    BOSS.forEach(function (b) { c.beginPath(); c.arc(X(b.p[0]), Y(b.p[1]), b.h * scale, 0, Math.PI * 2); c.stroke(); });
+    c.stroke();
     cache = off;
   }
 
@@ -782,16 +912,20 @@
     canvas.height = Math.round(H * dpr);
     if (W >= 820) {
       /* 放在右上，避开左下的大标题 */
-      scale = Math.min(W * 0.4, H * 0.66);
-      ox = W - scale - Math.max(40, W * 0.05);
-      oy = Math.max(H * 0.13, 86);
+      scale = Math.min(W * 0.34, H * 0.56);
+      ox = W - scale * 1.04 - Math.max(40, W * 0.05);
+      oy = Math.max(H * 0.14, 96) + scale * 0.36;
     } else {
-      scale = Math.min(W * 0.84, H * 0.62);
+      scale = Math.min(W * 0.76, H * 0.42);
       ox = (W - scale) / 2;
-      oy = Math.max(H * 0.1, 100);
+      oy = Math.max(H * 0.1, 96) + scale * 0.4;
     }
-    cell = Math.max(5, scale / 110);
-    seed();
+    /* 读数贴着右侧那行说明文字：桌面在它下面，手机在它上面 */
+    /* 用 offset 量，不受说明文字入场位移的影响；画布铺满首屏，原点相同 */
+    var note = $('.hero__note');
+    read = note && note.offsetParent === canvas.parentNode
+      ? [note.offsetLeft + note.offsetWidth, W >= 820 ? note.offsetTop + note.offsetHeight + 16 : note.offsetTop - 10]
+      : [W - 40, 120];
     buildCache();
   }
 
@@ -805,75 +939,96 @@
     ctx.stroke();
   }
 
-  /* 边界条件：左侧固定（斜线），右端载荷（箭头） */
-  function bounds(a) {
-    if (a <= 0.01) return;
-    ctx.strokeStyle = 'rgba(237,233,225,' + (0.35 * a).toFixed(3) + ')';
-    ctx.lineWidth = 1;
-    var x0 = X(0) - 6, i;
-    ctx.beginPath();
-    ctx.moveTo(x0, Y(0.02)); ctx.lineTo(x0, Y(DH - 0.02));
-    for (i = 0; i <= 12; i++) { var y = Y(0.03 + i * (DH - 0.06) / 12); ctx.moveTo(x0, y); ctx.lineTo(x0 - 8, y + 8); }
-    ctx.stroke();
-    var lx = X(LOAD[0]), ly = Y(LOAD[1]) + 0.06 * scale;
-    ctx.strokeStyle = 'rgba(232,105,43,' + (0.9 * a).toFixed(3) + ')';
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.moveTo(lx, ly); ctx.lineTo(lx, ly + 0.12 * scale);
-    ctx.moveTo(lx - 5, ly + 7); ctx.lineTo(lx, ly); ctx.lineTo(lx + 5, ly + 7);
-    ctx.stroke();
-  }
-
-  var BUCKETS = 8;
-  function drawCells(p) {
-    var L = ease(seg(p, 0.08, 0.6));
-    var tint = seg(p, 0.1, 0.62);
-    var fade = 1 - seg(p, 0.62, 0.74);
-    var paths = [], flash = [], i, c, alive = 0, s = cell * 0.82;
-    for (i = 0; i <= BUCKETS; i++) paths.push([]);
-    for (i = 0; i < cells.length; i++) {
-      c = cells[i];
-      if (L > c.key) {
-        /* 刚被淘汰的单元闪一下：只闪靠近结构的，远处的直接消失，画面不乱 */
-        if (L - c.key < 0.014 && c.key > 0.3) flash.push(c);
-        continue;
-      }
-      alive++;
-      paths[Math.round(clamp(c.d * tint) * BUCKETS)].push(c);
-    }
-    for (i = 0; i <= BUCKETS; i++) {
-      if (!paths[i].length) continue;
-      var k = i / BUCKETS;
-      ctx.fillStyle = 'rgba(' + Math.round(150 + 90 * k) + ',' + Math.round(150 - 45 * k) + ',' + Math.round(150 - 105 * k) + ',' + ((0.13 + 0.62 * k) * fade).toFixed(3) + ')';
-      ctx.beginPath();
-      paths[i].forEach(function (q) { ctx.rect(X(q.x), Y(q.y), s, s); });
-      ctx.fill();
-    }
-    if (flash.length) {
-      ctx.fillStyle = 'rgba(255,150,80,' + (0.6 * fade).toFixed(3) + ')';
-      ctx.beginPath();
-      flash.forEach(function (q) { ctx.rect(X(q.x), Y(q.y), s, s); });
-      ctx.fill();
-    }
-    return alive / total;
-  }
-
   function drawFlow(dt, strength) {
-    ctx.lineWidth = 1.2;
+    var i, p, a, b, o;
+    ctx.lineWidth = 1;
     ctx.lineCap = 'round';
-    for (var i = 0; i < flow.length; i++) {
-      var p = flow[i];
-      p.s -= p.v * dt;
+    for (i = 0; i < flow.length; i++) {
+      p = flow[i];
+      p.s += p.v * dt;
       p.life += dt;
-      if (p.s < -p.len) { spawn(p, false); continue; }
-      var a = along(p.m, p.s), b = along(p.m, p.s + p.len);
-      var o = clamp(p.life / 700) * clamp((p.s + p.len) / 0.08) * p.a * strength;
+      if (p.s > 1.34) { spawn(p, false); continue; }
+      a = centre(TARGET, p.s);
+      b = centre(TARGET, p.s - p.len);
+      o = clamp(p.life / 900) * seg(1.34 - p.s, 0, 0.16) * p.a * strength;
       if (o < 0.01) continue;
-      ctx.strokeStyle = 'rgba(255,' + Math.round(170 + 60 * Math.abs(p.o)) + ',' + Math.round(110 + 90 * Math.abs(p.o)) + ',' + o.toFixed(3) + ')';
+      var near = clamp(1 - (Math.abs(p.d) - 0.2) / 0.2);
+      ctx.strokeStyle = near > 0.1
+        ? 'rgba(244,' + Math.round(190 - near * 70) + ',' + Math.round(150 - near * 90) + ',' + o.toFixed(3) + ')'
+        : 'rgba(237,233,225,' + (o * 0.62).toFixed(3) + ')';
       ctx.beginPath();
-      ctx.moveTo(X(b.x + b.nx * b.r * p.o), Y(b.y + b.ny * b.r * p.o));
-      ctx.lineTo(X(a.x + a.nx * a.r * p.o), Y(a.y + a.ny * a.r * p.o));
+      ctx.moveTo(X(b.x + b.nx * p.d), Y(b.y + b.ny * p.d));
+      ctx.lineTo(X(a.x + a.nx * p.d), Y(a.y + a.ny * p.d));
       ctx.stroke();
+    }
+  }
+
+  function drawFilm(dt, strength) {
+    ctx.lineWidth = 1.3;
+    ctx.lineCap = 'round';
+    for (var i = 0; i < film.length; i++) {
+      var p = film[i];
+      p.u += p.v * dt;
+      if (p.u > 1) { spawnFilm(p, false); continue; }
+      var q1 = filmPos(p, p.u), q0 = filmPos(p, Math.max(0, p.u - p.len));
+      if (!q1 || !q0) { spawnFilm(p, false); continue; }
+      var o = p.a * strength * Math.sin(Math.PI * Math.min(1, p.u * 1.15));
+      if (o < 0.01) continue;
+      ctx.strokeStyle = 'rgba(' + Math.round(170 + 70 * (1 - p.u)) + ',225,255,' + o.toFixed(3) + ')';
+      ctx.beginPath();
+      ctx.moveTo(X(q0[0]), Y(q0[1]));
+      ctx.lineTo(X(q1[0]), Y(q1[1]));
+      ctx.stroke();
+    }
+    /* 冲击射流：腔内冷气打向外蒙皮 */
+    ctx.strokeStyle = 'rgba(150,205,255,' + (0.75 * strength).toFixed(3) + ')';
+    ctx.lineWidth = 1.2;
+    ctx.setLineDash([2, 5]);
+    ctx.lineDashOffset = -clock / 45;
+    ctx.beginPath();
+    JETS.forEach(function (j) { var p0 = P(j[1], j[0], CAV + 0.012), p1 = P(j[1], j[0], SK); ctx.moveTo(X(p0[0]), Y(p0[1])); ctx.lineTo(X(p1[0]), Y(p1[1])); });
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  /* 内部结构以线稿逐项长出来 */
+  function drawBuild(p) {
+    var fade = 1 - seg(p, 0.72, 0.8);
+    if (fade <= 0) return;
+    function ink(t) { return seg(p, t, t + 0.04) * fade; }
+    function stroke(a, warm) {
+      ctx.strokeStyle = warm ? 'rgba(232,105,43,' + (0.9 * a).toFixed(3) + ')' : 'rgba(237,233,225,' + (0.55 * a).toFixed(3) + ')';
+      ctx.stroke();
+    }
+    var a, i;
+    ctx.lineWidth = 1;
+    a = ink(0.44);
+    if (a > 0) { trace(ctx, TARGET); stroke(a, true); }
+    a = ink(0.48);
+    if (a > 0) {
+      var grow = ease(seg(p, 0.48, 0.56));
+      region(ctx, WALL[0], WALL[1], SK, SK, grow); stroke(a);
+      region(ctx, WALL[0], WALL[1], IN, IN, grow); stroke(a);
+    }
+    a = ink(0.53);
+    if (a > 0) { ctx.beginPath(); PEDS.forEach(function (q) { dot(ctx, P(q[1], q[0], SK + GP / 2), Math.max(1, GP * 0.42 * scale)); }); stroke(a * 0.8); }
+    CAVS.forEach(function (cv, k) {
+      a = ink(0.55 + k * 0.025);
+      if (a > 0) { region(ctx, cv[0], cv[1], CAV, CAV); stroke(a); }
+    });
+    a = ink(0.64);
+    if (a > 0) { region(ctx, TE[0], TE[1], SK2, teLower); stroke(a); ctx.beginPath(); PINS.forEach(function (q) { dot(ctx, pinAt(q), Math.max(1, scale * 0.0062)); }); stroke(a * 0.8); }
+    for (i = 0; i < HOLES.length; i++) {
+      var t = 0.66 + i * 0.006;
+      a = ink(t);
+      if (a <= 0) continue;
+      var e = holeEnds(HOLES[i]), flash = 1 - seg(p, t + 0.01, t + 0.05);
+      ctx.beginPath();
+      ctx.moveTo(X(e[0][0]), Y(e[0][1]));
+      ctx.lineTo(X(e[1][0]), Y(e[1][1]));
+      ctx.lineWidth = 1 + flash;
+      stroke(a, flash > 0.2);
+      ctx.lineWidth = 1;
     }
   }
 
@@ -884,40 +1039,58 @@
     ctx.translate(px, py);
 
     var fadeOut = 1 - seg(p, 0.95, 1);
-    var fadeIn = ease(seg(p, 0, 0.05));
-    ctx.globalAlpha = fadeOut * fadeIn;
+    var pull = ease(seg(p, 0, 0.5));
+    var fade = fadeOut * ease(seg(p, 0, 0.05));
+    var i, n, k, life, flash, j, g = [0, 0, 0, 0, 0, 0], alive = 0;
+    ctx.globalAlpha = 1;
 
-    /* 设计域外框：开始时最清楚，结构成形后淡去 */
-    var box = 1 - seg(p, 0.5, 0.7);
-    if (box > 0.01) {
-      ctx.strokeStyle = 'rgba(237,233,225,' + (0.22 * box).toFixed(3) + ')';
-      ctx.setLineDash([4, 6]);
-      ctx.lineWidth = 1;
-      ctx.strokeRect(X(0) - 0.5, Y(0) - 0.5, scale, DH * scale);
-      ctx.setLineDash([]);
+    if (dt) drawFlow(dt, 0.4 + 0.6 * ease(seg(p, 0.7, 0.82)) * fadeOut);
+
+    ctx.lineWidth = 1;
+    for (i = 0; i < pop.length; i++) {
+      n = pop[i];
+      life = 1 - seg(p, n.die, n.die + 0.03);
+      if (life <= 0) continue;
+      alive++;
+      flash = seg(p, n.die - 0.03, n.die) * life;
+      k = Math.min(1, pull * n.rate);
+      for (j = 0; j < 6; j++) g[j] = n.g[j] + (TARGET[j] - n.g[j]) * k;
+      var alpha = (1 - seg(p, 0.5, 0.58)) * fade;
+      if (alpha <= 0.002) continue;
+      trace(ctx, g);
+      ctx.strokeStyle = flash > 0.02
+        ? 'rgba(232,105,43,' + (0.8 * flash * alpha).toFixed(3) + ')'
+        : 'rgba(237,233,225,' + (0.17 * life * alpha).toFixed(3) + ')';
+      ctx.stroke();
     }
-    bounds(1);
 
-    var mass = 1;
-    if (p < 0.74) mass = drawCells(p);
-    else mass = kept;
+    ctx.globalAlpha = fade;
+    drawBuild(p);
+    ctx.globalAlpha = 1;
 
-    var show = ease(seg(p, 0.6, 0.74));
+    var show = ease(seg(p, 0.7, 0.78)) * fadeOut;
     if (show > 0 && cache) {
       ctx.save();
       ctx.setTransform(1, 0, 0, 1, px * dpr, py * dpr);
-      ctx.globalAlpha = show * fadeOut;
+      ctx.globalAlpha = show;
+      ctx.drawImage(cache, 0, 0);
+      /* 热呼吸 */
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.globalAlpha = show * (0.08 + 0.07 * Math.sin(clock / 1100));
       ctx.drawImage(cache, 0, 0);
       ctx.restore();
     }
-    if (dt) drawFlow(dt, ease(seg(p, 0.7, 0.8)) * fadeOut);
+    if (dt) drawFilm(dt, ease(seg(p, 0.76, 0.86)) * fadeOut);
 
-    /* 迭代读数：与语言无关，只用数字 */
-    var it = Math.round(ease(seg(p, 0.08, 0.6)) * 64);
+    /* 读数：与语言无关，只用数字和代号 */
     ctx.font = '11px ' + getComputedStyle(document.documentElement).getPropertyValue('--mono');
-    ctx.fillStyle = 'rgba(237,233,225,.5)';
-    ctx.fillText('ITER ' + ('00' + it).slice(-3) + '   MASS ' + Math.round(mass * 100) + '%', X(0), Y(0) - 12);
-    ctx.globalAlpha = 1;
+    ctx.fillStyle = 'rgba(237,233,225,' + (0.5 * fade).toFixed(3) + ')';
+    var txt = p < 0.5
+      ? 'GEN ' + ('00' + Math.round(pull * 240)).slice(-3) + '   CANDIDATES ' + alive
+      : 'TBC   DOUBLE-WALL   IMPINGEMENT ' + JETS.length + '   FILM ' + HOLES.length + '   PIN ' + PINS.length;
+    ctx.textAlign = 'right';
+    if (W >= 820) ctx.fillText(txt, read[0] - px, read[1] - py);
+    ctx.textAlign = 'left';
   }
 
   function drawHero(now) {
@@ -932,8 +1105,12 @@
   }
 
   if (ctx) {
+    seed();
     seedFlow();
+    seedFilm();
     resize();
+    /* 回归测试用：直接画某一时刻 */
+    canvas.__hero = function (p, n) { for (var i = 0; i < (n || 1); i++) { clock = p * CYCLE; frame(p, 16); } };
     if (!motion) {
       frame(0.8, 0);
     } else if (fine) {
@@ -1044,7 +1221,7 @@
     }
     update(y);
     if (lenis && fine) snap(now);
-    if (ctx && y < m.vh && !document.hidden) drawHero(now);
+    if (ctx && !bdHost && y < m.vh && !document.hidden) drawHero(now);
     else lastT = 0;
     requestAnimationFrame(tick);
   }

@@ -446,3 +446,103 @@ html[lang="en"] .label { letter-spacing: .1em; text-transform: uppercase; font-s
   .about2 .figures b { font-size: 22px !important; }
   .about2 .figures span { font-size: 11px !important; }
 }
+
+/* 十二领域聚焦卡片（三维版）：悬停一格后从这格裁切展开，盖住四列两行 */
+.areas { position: relative; }
+.areas__focus {
+  position: absolute; z-index: 6; display: none;
+  background: radial-gradient(ellipse 70% 60% at 50% 55%, #1c1f23 0%, #101214 62%, #0c0d0f 100%);
+  box-shadow: inset 0 0 0 1px rgba(232,105,43,.42);
+  transition: clip-path .52s cubic-bezier(.2,.75,.2,1);
+  cursor: grab; touch-action: none;
+}
+.areas__focus.is-on { display: block; }
+.areas__focus:active { cursor: grabbing; }
+.areas__focus canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.areas__fcap { position: absolute; left: clamp(18px, 1.6vw, 28px); top: clamp(14px, 2vh, 24px); display: grid; gap: 4px; pointer-events: none; }
+.areas__fcap b { font-family: var(--serif); font-weight: 400; font-size: clamp(18px, 1.5vw, 24px); color: var(--on-ink); }
+.areas__fcap small { font-size: 12.5px; color: var(--on-ink-2); letter-spacing: .02em; }
+/* 其余格子压暗（要盖过 .is-in > .rise 的不透明度） */
+html.motion .areas__grid.is-focus > li { opacity: .3; transition: opacity .45s ease 0s; }
+
+/* 商务合作：左栏变窄后电话、邮箱并排会压到右边的流程线，宽屏改成上下排 */
+@media (min-width: 1081px) {
+  .contact__grid { grid-template-columns: minmax(0, 1fr); gap: clamp(10px, 1.8vh, 18px); max-width: 30em; }
+  .contact__grid > div { padding-top: clamp(8px, 1.3vh, 12px); }
+  .contact .phone { font-size: clamp(24px, min(2.1vw, 4vh), 34px); margin-top: 2px; }
+  .contact address { font-size: clamp(14px, 1vw, 16px); }
+}
+/* 逐字动画的标题另藏了一份整句给读屏软件；不让它被选中，复制时文字只出现一次 */
+.split > .vh { -webkit-user-select: none; user-select: none; }
+
+/* ================= 毛玻璃 + 背景三维分析层（html.glass，仅桌面有动效有 WebGL 时） ================= */
+.bd { display: none; }
+html.glass body { background: #0a0b0d; }
+html.glass .bd { display: block; position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+.bd canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+/* 标题区压暗：模型转到页头后面时标题仍然清楚（夹在三维画面和 HUD 之间） */
+html.glass .bd::after { content: ''; position: absolute; inset: 0; z-index: 1; background: radial-gradient(ellipse 52% 30% at 26% 27%, rgba(10, 11, 13, .82), rgba(10, 11, 13, .5) 55%, transparent 100%); }
+html.glass .bd__hud { z-index: 2; }
+html.glass .bd::after { transition: opacity .6s ease; }
+html.glass .bd.is-hero::after { opacity: 0; }
+html.glass .bd .bd__gl, html.glass .bd .bd__hud { opacity: 0; transition: opacity 1s ease; }
+html.glass .bd.is-on .bd__gl, html.glass .bd.is-on .bd__hud { opacity: 1; }
+/* 首页：叶片在背景层里，首屏透明；左侧压暗衬标题 */
+html.glass .hero { background: transparent; }
+html.glass .hero__canvas { display: none; }
+html.glass .hero::after { inset: 0; height: auto; background: linear-gradient(90deg, rgba(8, 9, 11, .62), rgba(8, 9, 11, .3) 46%, rgba(8, 9, 11, 0) 64%), linear-gradient(to top, rgba(8, 9, 11, .7), rgba(8, 9, 11, 0) 34%); }
+html.glass main { position: relative; z-index: 1; }
+/* 第 2–6 屏透明，透出后面的三维；首屏保留自己的叶片动画 */
+html.glass .page:not(.hero), html.glass .page:not(.hero) > .sec:first-child { background: transparent !important; box-shadow: none !important; }
+html.glass #about::after, html.glass .contact::after { display: none; }
+/* 祖先带 will-change: opacity 会让毛玻璃只模糊页面自己，看不到背景；这里只留 transform */
+html.glass.motion.turn .page.is-near { will-change: transform; }
+html.glass :is(.label, h2, .lede) { text-shadow: 0 2px 22px rgba(5, 6, 8, .75), 0 0 2px rgba(5, 6, 8, .4); }
+
+/* 玻璃面板 */
+html.glass :is(.about2__text, .figures, .biz__list > li, .areas__grid > li, .clients__grid > li, .contact .duplex > div:first-child, .contact .flow) {
+  background: linear-gradient(150deg, rgba(255, 255, 255, .085), rgba(255, 255, 255, .018) 42%, rgba(255, 255, 255, .035)), rgba(14, 16, 19, .44);
+  -webkit-backdrop-filter: blur(22px) saturate(165%); backdrop-filter: blur(22px) saturate(165%);
+  border: 1px solid rgba(255, 255, 255, .1);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .13), 0 26px 60px -24px rgba(0, 0, 0, .7);
+  border-radius: 16px;
+}
+html.glass :is(.about2__text, .figures) { padding: clamp(20px, 2.6vh, 32px) clamp(22px, 2vw, 34px); }
+html.glass .about2 { align-items: stretch; }
+html.glass .figures > li { border-color: rgba(255, 255, 255, .08) !important; }
+html.glass .awards > li { border-color: rgba(255, 255, 255, .08) !important; }
+
+html.glass .biz__list { gap: clamp(10px, 1vw, 16px); border-top: 0; }
+html.glass .biz__list > li, html.glass .biz__list > li:first-child { padding: clamp(18px, 2.6vh, 28px) clamp(16px, 1.3vw, 22px); border-right: 1px solid rgba(255, 255, 255, .1); }
+html.glass .biz__list > li:hover { background: linear-gradient(150deg, rgba(255, 140, 70, .16), rgba(255, 255, 255, .02) 50%), rgba(14, 16, 19, .44); }
+
+html.glass .areas__grid { gap: clamp(10px, 1.6vh, 16px) clamp(10px, .9vw, 14px); }
+html.glass .areas__grid > li { padding: clamp(10px, 1.6vh, 16px) 8px clamp(12px, 1.8vh, 18px); border-top: 1px solid rgba(255, 255, 255, .1); }
+html.glass .areas__grid > li:hover { border-top-color: rgba(232, 105, 43, .7); background: linear-gradient(150deg, rgba(255, 140, 70, .14), rgba(255, 255, 255, .02) 50%), rgba(14, 16, 19, .44); }
+html.glass .areas__focus { border-radius: 18px; background: linear-gradient(150deg, rgba(255, 255, 255, .08), rgba(255, 255, 255, .02) 45%), rgba(12, 14, 17, .62); -webkit-backdrop-filter: blur(26px) saturate(170%); backdrop-filter: blur(26px) saturate(170%); }
+
+html.glass .clients__grid > li { padding: 10px 10px 12px; }
+
+html.glass .contact .duplex > div:first-child, html.glass .contact .flow { padding: clamp(20px, 2.8vh, 34px) clamp(22px, 2vw, 34px); }
+html.glass .contact__grid > div { border-color: rgba(255, 255, 255, .09) !important; }
+html.glass .foot { position: relative; z-index: 2; }
+/* 玻璃卡片的内边距会把页面撑高、触发整页缩小：这里把上下留白和行距收回来 */
+@media (min-width: 1081px) {
+  html.glass :is(.about2__text, .figures, .contact .duplex > div:first-child, .contact .flow) { padding-top: clamp(14px, 2.2vh, 26px); padding-bottom: clamp(14px, 2.2vh, 26px); }
+  html.glass .contact .flow__list > li { padding: clamp(1px, .5vh, 5px) 0 !important; }
+  html.glass .contact .flow__list > li span { line-height: 1.55; }
+  html.glass .contact .flow .label--sub { margin-bottom: clamp(6px, 1.4vh, 14px); }
+  html.glass .contact h2 { font-size: clamp(28px, min(2.6vw, 5vh), 44px); }
+  html.glass .contact__grid { margin-top: clamp(14px, 2.4vh, 26px) !important; }
+  html.glass .figures > li { padding-top: clamp(10px, 1.8vh, 20px) !important; padding-bottom: clamp(10px, 1.8vh, 20px) !important; }
+  html.glass .awards > li { padding-top: clamp(8px, 1.5vh, 16px) !important; padding-bottom: clamp(8px, 1.5vh, 16px) !important; }
+  html.glass .about2__text .lede { margin-top: clamp(10px, 1.6vh, 18px); }
+}
+@media (min-width: 1081px) and (max-height: 800px) {
+  html.glass .contact .flow__list > li { padding: 0 !important; }
+  html.glass .contact .flow__list > li b { font-size: clamp(16px, 2.3vh, 19px) !important; }
+  html.glass .contact .flow__list > li span { font-size: clamp(13px, 1.75vh, 14.5px) !important; line-height: 1.45; }
+  html.glass .contact .phone { font-size: clamp(22px, 3.6vh, 28px); }
+  html.glass .contact__grid { gap: 8px; }
+  html.glass .about2__text .awards > li { padding-top: 6px !important; padding-bottom: 6px !important; }
+}
