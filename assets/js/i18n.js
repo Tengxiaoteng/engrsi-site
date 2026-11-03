@@ -39,6 +39,10 @@
         if (el.__zhLabel == null) el.__zhLabel = el.getAttribute('aria-label');
         el.setAttribute('aria-label', en ? el.getAttribute('data-en-label') : el.__zhLabel);
       });
+      Array.prototype.forEach.call(box.querySelectorAll('[data-en-alt]'), function (el) {
+        if (el.__zhAlt == null) el.__zhAlt = el.getAttribute('alt');
+        el.setAttribute('alt', en ? el.getAttribute('data-en-alt') : el.__zhAlt);
+      });
       if (!scope) applied = lang;
     }
     root.classList.remove('lang-wait');

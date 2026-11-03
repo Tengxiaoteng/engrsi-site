@@ -884,6 +884,39 @@
     $$('[data-live]').forEach(function (el) { live.observe(el); });
   }
 
+  /* ---------- 典型产品轮播：看得见时自动换，点选后停在所选 ---------- */
+
+  (function () {
+    var stage = $('.show__stage');
+    if (!stage) return;
+    var imgs = $$('.show__img', stage), tabs = $$('.show__tab');
+    var at = 0, timer = null, held = false, DWELL = 6000;
+    function go(i, timed) {
+      at = (i + imgs.length) % imgs.length;
+      imgs.forEach(function (im, k) { im.classList.toggle('is-on', k === at); });
+      tabs.forEach(function (t, k) {
+        t.classList.toggle('is-on', k === at);
+        t.classList.remove('is-timed');
+        t.setAttribute('aria-pressed', String(k === at));
+      });
+      if (timed && motion) { void tabs[at].offsetWidth; tabs[at].classList.add('is-timed'); }
+      /* 下一张提前解码 */
+      var nx = imgs[(at + 1) % imgs.length];
+      if (nx.loading === 'lazy') nx.loading = 'eager';
+    }
+    function run() {
+      clearTimeout(timer);
+      if (held || !motion || !stage.classList.contains('is-live')) return;
+      go(at, true);
+      timer = setTimeout(function () { go(at + 1, true); run(); }, DWELL);
+    }
+    tabs.forEach(function (t, k) {
+      t.style.setProperty('--dwell', DWELL + 'ms');
+      t.addEventListener('click', function () { held = true; clearTimeout(timer); go(k, false); });
+    });
+    if (motion && 'MutationObserver' in window) new MutationObserver(run).observe(stage, { attributes: true, attributeFilter: ['class'] });
+  })();
+
   /* ---------- 中英文切换：原地换文字，停在同一页 ---------- */
 
   $$('[data-lang-switch]').forEach(function (b) {
