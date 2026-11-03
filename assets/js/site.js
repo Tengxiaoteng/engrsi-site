@@ -170,13 +170,6 @@
         try {
           window.EngStage.backdrop(bdHost);
           loaded();
-          /* 原来首屏的细线收敛搬到商务合作页的背景：画布挪进背景层，翻到那页才画 */
-          if (ctx) {
-            bdHost.insertBefore(canvas, bdHost.querySelector('.bd__hud'));
-            canvas.classList.add('bd__sec');
-            secMode = true;
-            resize();
-          }
         } catch (e) { dropBackdrop(); }
       }
       idle(function () {
