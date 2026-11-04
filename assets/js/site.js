@@ -1180,6 +1180,32 @@
     $$('[data-live]').forEach(function (el) { live.observe(el); });
   }
 
+  /* ---------- 服务单位：中文名一行写完，放不下就按比例缩字号 ---------- */
+
+  function fitNames() {
+    var one = (document.documentElement.lang || '').indexOf('en') !== 0 && window.innerWidth > 1080;
+    $$('.clients__grid > li > span:last-child').forEach(function (el) {
+      el.style.fontSize = '';
+      if (!one || el.scrollWidth <= el.clientWidth + 1) return;
+      var f = parseFloat(getComputedStyle(el).fontSize);
+      el.style.fontSize = Math.max(10.5, Math.floor(f * el.clientWidth / el.scrollWidth * 2) / 2) + 'px';
+    });
+  }
+
+  /* 合作流程：量出每个节点在导轨上的位置，换算成流光经过它的时刻（亮头走 0→100% 高度） */
+  function flowSync() {
+    var ol = $('.flow__list');
+    if (!ol || !ol.offsetHeight) return;
+    var h = ol.offsetHeight;
+    $$('.flow__list > li').forEach(function (li) {
+      var y = li.offsetTop + parseFloat(getComputedStyle(li).paddingTop) + (parseFloat(getComputedStyle(li, '::before').height) || 0) / 2;
+      li.style.setProperty('--at', Math.min(1, y / h).toFixed(3));
+    });
+  }
+  function fitText() { fitNames(); flowSync(); }
+  fitText();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitText);
+
   /* ---------- 中英文切换：原地换文字，停在同一页 ---------- */
 
   $$('[data-lang-switch]').forEach(function (b) {
@@ -1201,6 +1227,7 @@
         else window.scrollTo(0, to);
       }
       moveInd($('.nav a.is-here'));
+      fitText();
       if (ctx) resize();
     });
   });
@@ -1224,6 +1251,7 @@
         settled = false;
       }
       moveInd($('.nav a.is-here'));
+      fitText();
     }, 120);
   });
 
